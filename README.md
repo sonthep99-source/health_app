@@ -1,17 +1,47 @@
-# health_app
+# Health Tracker App 🏃‍♂️💧🌙🏆
 
-A new Flutter project.
+แอปพลิเคชันบันทึกและติดตามสุขภาพส่วนบุคคลแบบ Gamification (Health & Wellness Tracker with RPG Quests & Leaderboard) พัฒนาด้วย **Flutter 3** และ **Material Design 3**
 
-## Getting Started
+## ✨ ฟีเจอร์หลักในแอป
+1. **แดชบอร์ดระดับพรีเมียม (Gamified Dashboard)**:
+   - โปรไฟล์ผู้ใช้สไตล์ RPG: เลเวล (LV.), หลอดค่าประสบการณ์ (EXP), สตรีคเช็คอินต่อเนื่อง (Streak 🔥) และเหรียญสุขภาพ (Coins 🪙)
+   - พรีวิวเควสประจำวัน (Daily Quests Mini-Card) แสดงความคืบหน้าแบบเรียลไทม์ พร้อมปุ่มกดรับรางวัลทันที
+   - การ์ดสรุปกิจกรรมสุขภาพประจำวัน: ปริมาณน้ำดื่ม, ชั่วโมงการนอนหลับ, การออกกำลังกาย
+2. **ระบบเควสและภารกิจ (Quests & Missions System)**:
+   - เควสดื่มน้ำ (2,000 ml), เควสนอนหลับ (7+ ชม.), เควสฟิตเนส (30 นาที), เควสทานอาหารคลีน, เควสเดินสะสม (6,000 ก้าว)
+   - เควสจะเชื่อมโยงกับกิจกรรมจริงในแอปอัตโนมัติ (เช่น ดื่มน้ำในแท็บ Water Tracker จะอัปเดตความคืบหน้าเควสทันที)
+   - ปุ่มกดรับรางวัล (+EXP & +Coins) พร้อมการแจ้งเตือนและระบบฉลอง Level Up 🎉
+3. **ระบบตารางอันดับและลีก (Leaderboard & Leagues)**:
+   - แท่นรับรางวัล 3 อันดับแรก (Podium Top 3: 🥇 ทอง, 🥈 เงิน, 🥉 ทองแดง พร้อมมงกุฎ 👑)
+   - การจัดอันดับแบบเรียลไทม์ใน Gold League
+   - แถบแสดงสถานะอันดับปัจจุบันของคุณ พร้อมคำแนะนำคะแนนที่ต้องทำเพื่อแซงอันดับถัดไป
+4. **เหรียญตราเกียรติยศ (Achievement Badges)**:
+   - ปลดล็อกเหรียญตราตามความสำเร็จ เช่น "เซียนดื่มน้ำ", "หลับลึกสุขภาพดี", "พลังกล้ามเนื้อ"
+5. **บันทึกการดื่มน้ำ (Water Tracker)**: Progress Ring แบบวงกลมสวยงาม, ปุ่มลัด +250ml, +500ml และประวัติการดื่ม
+6. **บันทึกการนอนหลับ (Sleep Tracker)**: คำนวณชั่วโมงนอนข้ามคืนอัตโนมัติ และประเมินคุณภาพ
+7. **บันทึกการออกกำลังกาย (Workout Log)**: เลือกโปรแกรม Push, Pull, Legs และบันทึกประวัติการฝึก
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 🚀 วิธีเปิดแอปพลิเคชันขึ้นมาทดสอบ
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+เปิด Terminal ในโฟลเดอร์นี้ แล้วเลือกคำสั่งตามอุปกรณ์ที่ต้องการ:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+# เปิดบนเว็บเบราว์เซอร์ (Google Chrome) — แนะนำ รวดเร็วที่สุด
+flutter run -d chrome
+
+# หรือเปิดบน Microsoft Edge
+flutter run -d edge
+
+# เปิดเป็นโปรแกรม Windows Desktop
+flutter run -d windows
+```
+
+หรือกดปุ่ม **F5** ใน VS Code / Antigravity IDE เพื่อเริ่มรันแบบ GUI ได้ทันที
+
+---
+
+## 📖 เอกสารเชิงเทคนิค
+อ่านเอกสารอธิบายโครงสร้างโค้ด สถาปัตยกรรม และอัลกอริทึมได้ที่:
+👉 **[CODE_EXPLANATION.md](CODE_EXPLANATION.md)**

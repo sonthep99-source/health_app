@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'quest_ranking_screen.dart';
+import 'workout_missions.dart';
+import 'subscription_insights.dart';
 
 void main() {
   runApp(const MyApp());
@@ -150,6 +153,449 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     'Legs': 'Barbell Squat 4 เซต, Romanian Deadlift 3 เซต, Leg Press 3 เซต, Calf Raise 4 เซต',
   };
 
+  // Subscription & Pro Insights State
+  bool _isSubscribed = false;
+
+  // Workout Missions State
+  late List<WorkoutMission> _workoutMissions;
+  String _selectedMissionCategory = 'ทั้งหมด';
+
+  // Gamification & Quest State
+  int _userLevel = 4;
+  int _userExp = 380;
+  int _userExpMax = 500;
+  int _userCoins = 240;
+  final int _userStreak = 5;
+
+  late List<QuestItem> _quests;
+  late List<LeaderboardUser> _leaderboard;
+  late List<HealthBadge> _badges;
+
+  @override
+  void initState() {
+    super.initState();
+    _workoutMissions = getDefaultWorkoutMissions();
+    _initGamificationData();
+  }
+
+  void _initGamificationData() {
+    _quests = [
+      QuestItem(
+        id: 'q1',
+        title: 'ดื่มน้ำเพื่อสุขภาพ',
+        description: 'ดื่มน้ำให้ครบ 2,000 ml วันนี้เพื่อความสดชื่น',
+        expReward: 60,
+        coinReward: 20,
+        category: 'water',
+        icon: Icons.water_drop_rounded,
+        color: const Color(0xFF0284C7),
+        currentProgress: _currentWater,
+        targetProgress: _waterGoal,
+        unit: 'ml',
+        targetTabIndex: 1,
+      ),
+      QuestItem(
+        id: 'q2',
+        title: 'นอนหลับเต็มอิ่ม 7+ ชม.',
+        description: 'พักผ่อนอย่างเพียงพอเพื่อฟื้นฟูร่างกาย',
+        expReward: 70,
+        coinReward: 25,
+        category: 'sleep',
+        icon: Icons.bedtime_rounded,
+        color: const Color(0xFF6366F1),
+        currentProgress: _sleepHours.toInt(),
+        targetProgress: 7,
+        unit: 'ชม.',
+        targetTabIndex: 2,
+      ),
+      QuestItem(
+        id: 'q3',
+        title: 'ฟิตเนสเบิร์นพลังงาน',
+        description: 'ออกกำลังกายอย่างน้อย 30 นาทีในวันนี้',
+        expReward: 100,
+        coinReward: 35,
+        category: 'workout',
+        icon: Icons.fitness_center_rounded,
+        color: const Color(0xFF10B981),
+        currentProgress: _workoutDuration,
+        targetProgress: 30,
+        unit: 'นาที',
+        targetTabIndex: 3,
+      ),
+      QuestItem(
+        id: 'q4',
+        title: 'เช็คอินทานอาหารคลีน',
+        description: 'หลีกเลี่ยงของทอดหรือเครื่องดื่มรสหวาน',
+        expReward: 40,
+        coinReward: 15,
+        category: 'habit',
+        icon: Icons.restaurant_rounded,
+        color: const Color(0xFFF59E0B),
+        currentProgress: 1,
+        targetProgress: 1,
+        unit: 'ครั้ง',
+        targetTabIndex: 0,
+      ),
+      QuestItem(
+        id: 'q5',
+        title: 'เดินสะสม 6,000 ก้าว',
+        description: 'ขยับร่างกายอย่างกระฉับกระเฉงตลอดวัน',
+        expReward: 50,
+        coinReward: 20,
+        category: 'habit',
+        icon: Icons.directions_walk_rounded,
+        color: const Color(0xFFEC4899),
+        currentProgress: 4500,
+        targetProgress: 6000,
+        unit: 'ก้าว',
+        targetTabIndex: 0,
+      ),
+    ];
+
+    _leaderboard = [
+      LeaderboardUser(
+        rank: 1,
+        name: 'พี่เบิร์ด สายลีน',
+        avatarInitials: 'BL',
+        avatarColor: const Color(0xFFF59E0B),
+        level: 6,
+        exp: 2450,
+        streakDays: 14,
+        tier: 'Diamond League',
+      ),
+      LeaderboardUser(
+        rank: 2,
+        name: 'น้องมุก พิลาทิส',
+        avatarInitials: 'MK',
+        avatarColor: const Color(0xFF6366F1),
+        level: 5,
+        exp: 1920,
+        streakDays: 9,
+        tier: 'Platinum League',
+      ),
+      LeaderboardUser(
+        rank: 3,
+        name: 'โค้ชก้อง เวทเทรน',
+        avatarInitials: 'KG',
+        avatarColor: const Color(0xFF10B981),
+        level: 5,
+        exp: 1500,
+        streakDays: 7,
+        tier: 'Gold League',
+      ),
+      LeaderboardUser(
+        rank: 4,
+        name: 'คุณ (ผู้ใช้)',
+        avatarInitials: 'ME',
+        avatarColor: const Color(0xFF0284C7),
+        level: _userLevel,
+        exp: 1420,
+        streakDays: _userStreak,
+        tier: 'Gold League',
+        isCurrentUser: true,
+      ),
+      LeaderboardUser(
+        rank: 5,
+        name: 'แจน วิ่งมาราธอน',
+        avatarInitials: 'JN',
+        avatarColor: const Color(0xFFEC4899),
+        level: 4,
+        exp: 1350,
+        streakDays: 4,
+        tier: 'Gold League',
+      ),
+      LeaderboardUser(
+        rank: 6,
+        name: 'เต้ ดื่มน้ำจุใจ',
+        avatarInitials: 'TT',
+        avatarColor: const Color(0xFF06B6D4),
+        level: 3,
+        exp: 1100,
+        streakDays: 3,
+        tier: 'Silver League',
+      ),
+    ];
+
+    _badges = [
+      HealthBadge(
+        id: 'b1',
+        title: 'เซียนดื่มน้ำ',
+        desc: 'ดื่มน้ำครบ 2,000 ml ติดต่อกัน 3 วัน',
+        icon: Icons.water_drop_rounded,
+        color: const Color(0xFF0284C7),
+        isUnlocked: true,
+        unlockedDate: 'เมื่อวานนี้',
+      ),
+      HealthBadge(
+        id: 'b2',
+        title: 'หลับลึกสุขภาพดี',
+        desc: 'นอนหลับ 7 ชั่วโมงขึ้นไปและตื่นตรงเวลา',
+        icon: Icons.bedtime_rounded,
+        color: const Color(0xFF6366F1),
+        isUnlocked: true,
+        unlockedDate: 'วันนี้',
+      ),
+      HealthBadge(
+        id: 'b3',
+        title: 'พลังกล้ามเนื้อ',
+        desc: 'ออกกำลังกายครบ 5 ครั้งในเดือนนี้',
+        icon: Icons.fitness_center_rounded,
+        color: const Color(0xFF10B981),
+        isUnlocked: true,
+        unlockedDate: '3 วันที่แล้ว',
+      ),
+      HealthBadge(
+        id: 'b4',
+        title: 'สตรีคไฟลุก 7 วัน',
+        desc: 'เช็คอินสุขภาพต่อเนื่อง 7 วันติด',
+        icon: Icons.local_fire_department_rounded,
+        color: const Color(0xFFEF4444),
+        isUnlocked: false,
+      ),
+      HealthBadge(
+        id: 'b5',
+        title: 'เพอร์เฟกต์เดย์',
+        desc: 'ทำเควสประจำวันสำเร็จครบทุกข้อใน 1 วัน',
+        icon: Icons.stars_rounded,
+        color: const Color(0xFFF59E0B),
+        isUnlocked: false,
+      ),
+      HealthBadge(
+        id: 'b6',
+        title: 'ตำนานไดมอนด์',
+        desc: 'ขึ้นสู่อันดับ Top 3 ในลีกสูงสุด',
+        icon: Icons.military_tech_rounded,
+        color: const Color(0xFF8B5CF6),
+        isUnlocked: false,
+      ),
+    ];
+  }
+
+  void _syncQuestProgress() {
+    for (final q in _quests) {
+      if (q.id == 'q1') {
+        q.currentProgress = _currentWater;
+      } else if (q.id == 'q2') {
+        q.currentProgress = _sleepHours.toInt();
+      } else if (q.id == 'q3') {
+        final totalMins = _workoutRecords.fold<int>(0, (sum, i) => sum + i.durationMinutes);
+        q.currentProgress = totalMins;
+      }
+    }
+  }
+
+  void _claimQuest(QuestItem quest) {
+    if (!quest.isCompleted || quest.isClaimed) return;
+    setState(() {
+      quest.isClaimed = true;
+      _userExp += quest.expReward;
+      _userCoins += quest.coinReward;
+
+      // Update leaderboard entry for current user
+      final userIndex = _leaderboard.indexWhere((u) => u.isCurrentUser);
+      if (userIndex != -1) {
+        final current = _leaderboard[userIndex];
+        _leaderboard[userIndex] = LeaderboardUser(
+          rank: current.rank,
+          name: current.name,
+          avatarInitials: current.avatarInitials,
+          avatarColor: current.avatarColor,
+          level: _userLevel,
+          exp: current.exp + quest.expReward,
+          streakDays: _userStreak,
+          tier: current.tier,
+          isCurrentUser: true,
+        );
+      }
+
+      // Check level up
+      if (_userExp >= _userExpMax) {
+        _userLevel++;
+        _userExp -= _userExpMax;
+        _userExpMax = (_userExpMax * 1.25).toInt();
+        _showLevelUpDialog();
+      }
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.stars_rounded, color: Colors.amber, size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'สำเร็จเควส "${quest.title}" รับ +${quest.expReward} EXP และ ${quest.coinReward} 🪙!',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
+  void _showLevelUpDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: const Color(0xFF0F172A),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFFCD34D)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 48),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              '🎉 LEVEL UP! 🎉',
+              style: TextStyle(
+                color: Color(0xFFF59E0B),
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'ยินดีด้วย! คุณเลเวลอัปเป็น LV.$_userLevel แล้ว',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'สุขภาพของคุณแข็งแกร่งขึ้นอีกขั้น! ได้รับโบนัสพิเศษและปลดล็อกเหรียญตราใหม่',
+              style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 13,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF59E0B),
+                foregroundColor: const Color(0xFF0F172A),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: const Text('ยอดเยี่ยมเลย!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _toggleSubscription(bool status) {
+    setState(() {
+      _isSubscribed = status;
+    });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              status ? Icons.workspace_premium_rounded : Icons.info_outline_rounded,
+              color: status ? const Color(0xFFF59E0B) : Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                status
+                    ? '🎉 ยินดีต้อนรับสู่ Health Pro VIP! บทวิเคราะห์เชิงลึกถูกปลดล็อกแล้ว'
+                    : 'ยกเลิกสถานะ Pro เรียบร้อยแล้ว (Demo Mode)',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
+  void _completeWorkoutMission(WorkoutMission mission) {
+    setState(() {
+      mission.isCompletedToday = true;
+      final expGain = _isSubscribed ? (mission.expReward * 1.5).toInt() : mission.expReward;
+      _userExp += expGain;
+      _userCoins += mission.coinReward;
+
+      _workoutRecords.insert(
+        0,
+        WorkoutRecord(
+          category: mission.category,
+          exercises: mission.exercises.join(', '),
+          durationMinutes: mission.durationMinutes,
+          date: DateTime.now(),
+        ),
+      );
+
+      _syncQuestProgress();
+
+      // Check level up
+      if (_userExp >= _userExpMax) {
+        _userLevel++;
+        _userExp -= _userExpMax;
+        _userExpMax = (_userExpMax * 1.25).toInt();
+        _showLevelUpDialog();
+      }
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.fitness_center_rounded, color: Color(0xFF10B981), size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'พิชิตภารกิจ "${mission.title}" สำเร็จ! รับ +${_isSubscribed ? (mission.expReward * 1.5).toInt() : mission.expReward} EXP และ ${mission.coinReward} 🪙',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _exerciseController.dispose();
@@ -162,6 +608,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() {
       _currentWater += amount;
       _waterLogs.insert(0, WaterLog(amount: amount, time: DateTime.now()));
+      _syncQuestProgress();
     });
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -197,6 +644,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               setState(() {
                 _currentWater = 0;
                 _waterLogs.clear();
+                _syncQuestProgress();
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -253,6 +701,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           date: DateTime.now(),
         ),
       );
+      _syncQuestProgress();
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -295,6 +744,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           date: DateTime.now(),
         ),
       );
+      _syncQuestProgress();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -309,6 +759,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _deleteWorkout(int index) {
     setState(() {
       _workoutRecords.removeAt(index);
+      _syncQuestProgress();
     });
   }
 
@@ -340,19 +791,106 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ไม่มีการแจ้งเตือนใหม่'),
-                  behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 1),
+          // VIP Pro Badge / Subscribe Button
+          InkWell(
+            onTap: () => showSubscriptionModal(
+              context: context,
+              isSubscribed: _isSubscribed,
+              onToggleSubscription: _toggleSubscription,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: _isSubscribed
+                    ? const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                      )
+                    : null,
+                color: _isSubscribed ? null : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isSubscribed ? const Color(0xFFF59E0B) : const Color(0xFFCBD5E1),
                 ),
-              );
-            },
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.workspace_premium_rounded,
+                    color: _isSubscribed ? Colors.white : const Color(0xFF64748B),
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isSubscribed ? 'VIP PRO' : 'PRO',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _isSubscribed ? Colors.white : const Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(width: 8),
+
+          // Coins Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🪙', style: TextStyle(fontSize: 12)),
+                const SizedBox(width: 4),
+                Text(
+                  '$_userCoins',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Streak Badge
+          InkWell(
+            onTap: () => setState(() => _currentIndex = 4),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🔥', style: TextStyle(fontSize: 12)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_userStreak วัน',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFB91C1C),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
         ],
       ),
       body: IndexedStack(
@@ -362,6 +900,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           _buildWaterTab(),
           _buildSleepTab(),
           _buildWorkoutTab(),
+          QuestRankingScreen(
+            userLevel: _userLevel,
+            userExp: _userExp,
+            userExpMax: _userExpMax,
+            userCoins: _userCoins,
+            userStreak: _userStreak,
+            quests: _quests,
+            leaderboard: _leaderboard,
+            badges: _badges,
+            onClaimQuest: _claimQuest,
+            onNavigateToTab: (index) => setState(() => _currentIndex = index),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -376,8 +926,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF0284C7),
           unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
@@ -400,6 +950,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               activeIcon: Icon(Icons.fitness_center_rounded),
               label: 'ออกกำลังกาย',
             ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events_outlined),
+              activeIcon: Icon(Icons.emoji_events_rounded),
+              label: 'เควส & อันดับ',
+            ),
           ],
         ),
       ),
@@ -416,6 +971,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         return 'Sleep Tracker';
       case 3:
         return 'Workout Log';
+      case 4:
+        return 'เควส & ตารางอันดับ';
       default:
         return 'Health Tracker';
     }
@@ -430,25 +987,204 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       0,
       (sum, item) => sum + item.durationMinutes,
     );
+    final completedQuests = _quests.where((q) => q.isCompleted).length;
+    final expPercent = (_userExp / _userExpMax).clamp(0.0, 1.0);
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       children: [
-        // Welcome Header Banner
+        // Gamified RPG Profile Banner
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+              colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0369A1)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x400284C7),
-                blurRadius: 16,
+                color: Color(0x330F172A),
+                blurRadius: 18,
                 offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFF59E0B), Color(0xFFFCD34D)],
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(2.5),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF0F172A),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.person_rounded, color: Colors.white, size: 28),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF0F172A), width: 1.5),
+                        ),
+                        child: Text(
+                          'LV.$_userLevel',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Text(
+                              'คุณ (นักรบสุขภาพ)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0x3338BDF8),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Gold League 🏆',
+                                style: TextStyle(
+                                  color: Color(0xFF38BDF8),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'สตรีค $_userStreak วัน 🔥',
+                              style: const TextStyle(
+                                color: Color(0xFFFCA5A5),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Coins
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0x22FFFFFF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🪙', style: TextStyle(fontSize: 14)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$_userCoins',
+                          style: const TextStyle(
+                            color: Color(0xFFFDE68A),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // EXP Level Bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'EXP: $_userExp / $_userExpMax',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    '${(expPercent * 100).toInt()}% เพื่อ LV.${_userLevel + 1}',
+                    style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: expPercent,
+                  minHeight: 7,
+                  backgroundColor: const Color(0x33FFFFFF),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Deep Health Insights & Subscription Widget
+        HealthInsightsWidget(
+          isSubscribed: _isSubscribed,
+          onOpenSubscription: () => showSubscriptionModal(
+            context: context,
+            isSubscribed: _isSubscribed,
+            onToggleSubscription: _toggleSubscription,
+          ),
+        ),
+
+        // Today's Quest Mini-Card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -458,59 +1194,106 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0x33FFFFFF),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.stars_rounded, color: Color(0xFFD97706), size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ภารกิจประจำวันนี้',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                          Text(
+                            'สำเร็จแล้ว $completedQuests จาก ${_quests.length} เควส',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() => _currentIndex = 4),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.calendar_today_rounded, size: 14, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          'วันนี้ • สุขภาพดีเริ่มต้นได้ทุกวัน',
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
+                        Text('ดูทั้งหมด', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Icon(Icons.chevron_right_rounded, size: 16),
                       ],
                     ),
                   ),
-                  const CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Colors.white24,
-                    child: Icon(Icons.person, color: Colors.white, size: 20),
-                  ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'สวัสดีตอนเช้า!',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'ภาพรวมสุขภาพของคุณ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
               ),
               const SizedBox(height: 12),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
-                  value: ((waterPercent + (_sleepHours >= 7 ? 1.0 : 0.6) + (_workoutRecords.isNotEmpty ? 1.0 : 0.0)) / 3).clamp(0.0, 1.0),
+                  value: _quests.isNotEmpty ? (completedQuests / _quests.length) : 0,
                   minHeight: 6,
-                  backgroundColor: Colors.white24,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF38BDF8)),
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
                 ),
               ),
+              const SizedBox(height: 14),
+
+              // Mini Quest Quick Items (First 2 active quests)
+              ..._quests.take(2).map((q) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        q.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        color: q.isCompleted ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          q.title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: q.isClaimed ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                            fontWeight: FontWeight.w500,
+                            decoration: q.isClaimed ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                      ),
+                      if (q.isCompleted && !q.isClaimed)
+                        InkWell(
+                          onTap: () => _claimQuest(q),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'รับรางวัล',
+                              style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        )
+                      else if (!q.isCompleted)
+                        Text(
+                          '${q.currentProgress}/${q.targetProgress} ${q.unit}',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                        )
+                      else
+                        const Text('✓ รับแล้ว', style: TextStyle(fontSize: 11, color: Color(0xFF10B981))),
+                    ],
+                  ),
+                );
+              }),
             ],
           ),
         ),
@@ -1190,210 +1973,361 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               selectedColor: const Color(0xFFEEF2FF),
               labelStyle: TextStyle(
                 color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF64748B),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              ),
-              side: BorderSide(
-                color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFE2E8F0),
-              ),
-              onSelected: (selected) {
-                if (selected) setState(() => _sleepQuality = quality);
-              },
-            );
-          }).toList(),
-        ),
+                fontWeight: isSelected ? FontWeight.bold : FontWeig  // ===========================================================================
+  // TAB 4: WORKOUT MISSIONS & CHALLENGES
+  // ===========================================================================
+  Widget _buildWorkoutTab() {
+    final categories = ['ทั้งหมด', 'Full Body', 'Push', 'Pull', 'Legs', 'Core'];
+    final filteredMissions = _selectedMissionCategory == 'ทั้งหมด'
+        ? _workoutMissions
+        : _workoutMissions.where((m) => m.category == _selectedMissionCategory).toList();
 
-        const SizedBox(height: 20),
-        ElevatedButton.icon(
-          onPressed: _saveSleepLog,
-          icon: const Icon(Icons.save_rounded),
-          label: const Text('บันทึกข้อมูลการนอน'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6366F1),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-        ),
+    final totalBurned = _workoutRecords.fold<int>(0, (sum, w) => sum + (w.durationMinutes * 8));
 
-        const SizedBox(height: 24),
-        const Text(
-          'บันทึกล่าสุด',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-        ),
-        const SizedBox(height: 12),
-
-        ..._sleepRecords.map((record) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      children: [
+        // Hero Mission Center Banner
+        Container(
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.bedtime_rounded, color: Color(0xFF6366F1), size: 18),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF065F46), Color(0xFF047857), Color(0xFF059669)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF059669).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.military_tech_rounded, size: 14, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'MISSION CENTER',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_isSubscribed)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 12),
+                          SizedBox(width: 4),
+                          Text('EXP x1.5 ACTIVE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'ภารกิจออกกำลังกาย (Workout Missions)',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'เลือกภารกิจที่ออกแบบโดยผู้เชี่ยวชาญ พิชิตท่าฝึกเพื่อรับ EXP, เหรียญ และเบิร์นแคลอรี',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+
+              // Mini summary row
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0x22FFFFFF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     Text(
-                      '${record.hours} ชม. (${record.quality})',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                      'พิชิตแล้ว: ${_workoutRecords.length} ครั้ง',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
+                    Container(width: 1, height: 16, color: Colors.white30),
                     Text(
-                      '${record.bedTime.format(context)} - ${record.wakeTime.format(context)}',
-                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                      'เบิร์นสะสม: ~$totalBurned kcal 🔥',
+                      style: const TextStyle(color: Color(0xFFFDE68A), fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
-              Text(
-                '${record.date.day}/${record.date.month}',
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w600),
-              ),
             ],
           ),
-        )),
+        ),
+
         const SizedBox(height: 20),
+
+        // Category Filter Chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: categories.map((cat) {
+              final isSelected = _selectedMissionCategory == cat;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(cat),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) setState(() => _selectedMissionCategory = cat);
+                  },
+                  selectedColor: const Color(0xFF10B981),
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF475569),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  backgroundColor: Colors.white,
+                  side: BorderSide(
+                    color: isSelected ? const Color(0xFF10B981) : const Color(0xFFE2E8F0),
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Missions List
+        ...filteredMissions.map((mission) => _buildMissionCard(mission)),
+
+        const SizedBox(height: 24),
+
+        // Workout History Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'ประวัติการออกกำลังกายที่พิชิตแล้ว',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            ),
+            Text(
+              '${_workoutRecords.length} รายการ',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (_workoutRecords.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Center(
+              child: Text(
+                'ยังไม่มีประวัติภารกิจ เลือกภารกิจด้านบนแล้วกด "เริ่มภารกิจ" ได้เลย!',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+              ),
+            ),
+          )
+        else
+          ..._workoutRecords.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final record = entry.value;
+            return _buildWorkoutHistoryCard(record, idx);
+          }),
+
+        const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _buildTimePickerTile({
-    required String title,
-    required TimeOfDay time,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+  Widget _buildMissionCard(WorkoutMission mission) {
+    final expReward = _isSubscribed ? (mission.expReward * 1.5).toInt() : mission.expReward;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: mission.isCompletedToday ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+          width: mission.isCompletedToday ? 1.5 : 1,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 18, color: color),
-                const SizedBox(width: 6),
-                Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              time.format(context),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-            ),
-            const SizedBox(height: 4),
-            const Text('แตะเพื่อเปลี่ยนเวลา', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
-          ],
-        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(mission.icon, color: const Color(0xFF10B981), size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: mission.difficultyColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            mission.difficulty,
+                            style: TextStyle(
+                              color: mission.difficultyColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          mission.category,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      mission.title,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            mission.subtitle,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+          ),
+          const SizedBox(height: 14),
+
+          // Pills row
+          Row(
+            children: [
+              _buildBadgePill(Icons.timer_outlined, '${mission.durationMinutes} นาที', const Color(0xFF0284C7)),
+              const SizedBox(width: 8),
+              _buildBadgePill(Icons.local_fire_department_rounded, '~${mission.caloriesBurn} kcal', const Color(0xFFEF4444)),
+              const SizedBox(width: 8),
+              _buildBadgePill(Icons.bolt_rounded, '+$expReward EXP', const Color(0xFFF59E0B)),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Action button
+          SizedBox(
+            width: double.infinity,
+            child: mission.isCompletedToday
+                ? Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'พิชิตภารกิจนี้แล้ววันนี้ ✓',
+                          style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: () {
+                      showWorkoutMissionModal(
+                        context: context,
+                        mission: mission,
+                        onCompleteMission: _completeWorkoutMission,
+                      );
+                    },
+                    icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                    label: const Text('เริ่มทำภารกิจนี้'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
 
-  // ===========================================================================
-  // TAB 4: WORKOUT TRACKER
-  // ===========================================================================
-  Widget _buildWorkoutTab() {
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      children: [
-        // Templates Selection
-        const Text(
-          'เลือกเทมเพลตตารางฝึก (Workout Template)',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-        ),
-        const SizedBox(height: 12),
-
-        Row(
-          children: [
-            _buildTemplateChip('Push', 'อก / ไหล่ / หลังแขน', Icons.sports_gymnastics_rounded),
-            const SizedBox(width: 8),
-            _buildTemplateChip('Pull', 'หลัง / แขนหน้า', Icons.fitness_center_rounded),
-            const SizedBox(width: 8),
-            _buildTemplateChip('Legs', 'ขา / แกนกลาง', Icons.directions_run_rounded),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        // Workout Form Card
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.edit_note_rounded, color: Color(0xFF10B981), size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'บันทึกตารางฝึก $_selectedTemplate Day',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Duration field
-                const Text('ระยะเวลาฝึก (นาที)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _durationController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.timer_outlined, color: Color(0xFF64748B)),
-                    suffixText: 'นาที',
-                    hintText: 'เช่น 45, 60',
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Exercises Notes field
-                const Text('ท่าเล่นและจำนวนเซต', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _exerciseController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'ระบุท่าออกกำลังกายและเซต...',
+  Widget _buildBadgePill(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 12),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }�ำลังกายและเซต...',
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     border: OutlineInputBorder(

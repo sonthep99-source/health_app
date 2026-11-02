@@ -9,7 +9,7 @@ void main() {
     // Verify that the title and bottom navigation tabs appear.
     expect(find.text('Health Dashboard'), findsOneWidget);
     expect(find.text('แดชบอร์ด'), findsOneWidget);
-    expect(find.text('ดื่มน้ำ'), findsOneWidget);
+    expect(find.text('อาหาร & น้ำ'), findsOneWidget);
     expect(find.text('การนอน'), findsOneWidget);
     expect(find.text('ออกกำลังกาย'), findsOneWidget);
   });

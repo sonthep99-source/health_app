@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'quest_ranking_screen.dart';
 import 'workout_missions.dart';
 import 'subscription_insights.dart';
+import 'routine_builder.dart';
+import 'nutrition_tracker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -114,6 +116,39 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     WaterLog(amount: 500, time: DateTime.now().subtract(const Duration(hours: 4))),
     WaterLog(amount: 250, time: DateTime.now().subtract(const Duration(hours: 2))),
     WaterLog(amount: 500, time: DateTime.now().subtract(const Duration(minutes: 40))),
+  ];
+
+  // Nutrition & Meal Tracker State
+  int _nutritionSubTabIndex = 0; // 0: อาหาร & โภชนาการ, 1: ดื่มน้ำ
+  final int _calorieGoal = 2100;
+  final double _proteinGoal = 140;
+  final double _carbsGoal = 220;
+  final double _fatGoal = 65;
+  final List<MealLog> _meals = [
+    MealLog(
+      id: 'm1',
+      name: 'ข้าวอกไก่ย่าง + บรอกโคลี',
+      type: MealType.lunch,
+      calories: 380,
+      protein: 42,
+      carbs: 40,
+      fat: 4,
+      time: DateTime.now().subtract(const Duration(hours: 3)),
+      emoji: '🍗',
+      isClean: true,
+    ),
+    MealLog(
+      id: 'm2',
+      name: 'เวย์โปรตีน 1 สกู๊ป + กล้วยหอม',
+      type: MealType.snack,
+      calories: 225,
+      protein: 26,
+      carbs: 30,
+      fat: 1.5,
+      time: DateTime.now().subtract(const Duration(hours: 1)),
+      emoji: '🥛',
+      isClean: true,
+    ),
   ];
 
   // Sleep Tracker State
@@ -380,8 +415,56 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       } else if (q.id == 'q3') {
         final totalMins = _workoutRecords.fold<int>(0, (sum, i) => sum + i.durationMinutes);
         q.currentProgress = totalMins;
+      } else if (q.id == 'q4') {
+        final cleanCount = _meals.where((m) => m.isClean).length;
+        q.currentProgress = cleanCount > 0 ? 1 : 0;
       }
     }
+  }
+
+  void _addMeal(MealLog meal) {
+    setState(() {
+      _meals.insert(0, meal);
+      final expReward = _isSubscribed ? 60 : 40;
+      _userExp += expReward;
+      _userCoins += 15;
+      _syncQuestProgress();
+
+      if (_userExp >= _userExpMax) {
+        _userLevel++;
+        _userExp -= _userExpMax;
+        _userExpMax = (_userExpMax * 1.25).toInt();
+        _showLevelUpDialog();
+      }
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.restaurant_rounded, color: Color(0xFF10B981), size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'บันทึก "${meal.name}" (${meal.calories} kcal) สำเร็จ! รับ +${_isSubscribed ? 60 : 40} EXP และ 15 🪙!',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
+  void _deleteMeal(int index) {
+    setState(() {
+      _meals.removeAt(index);
+      _syncQuestProgress();
+    });
   }
 
   void _claimQuest(QuestItem quest) {
@@ -584,6 +667,63 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             Expanded(
               child: Text(
                 'พิชิตภารกิจ "${mission.title}" สำเร็จ! รับ +${_isSubscribed ? (mission.expReward * 1.5).toInt() : mission.expReward} EXP และ ${mission.coinReward} 🪙',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
+
+  void _saveCustomRoutine({
+    required String routineName,
+    required List<RoutineExercise> exercises,
+    required int durationMinutes,
+    required RoutineAnalysis analysis,
+  }) {
+    setState(() {
+      final exerciseSummary = exercises
+          .map((e) => '${e.name} (${e.sets}x${e.reps})')
+          .join(', ');
+
+      _workoutRecords.insert(
+        0,
+        WorkoutRecord(
+          category: 'Custom',
+          exercises: '$routineName: $exerciseSummary',
+          durationMinutes: durationMinutes,
+          date: DateTime.now(),
+        ),
+      );
+
+      final expReward = _isSubscribed ? 180 : 120;
+      _userExp += expReward;
+      _userCoins += 30;
+
+      _syncQuestProgress();
+
+      if (_userExp >= _userExpMax) {
+        _userLevel++;
+        _userExp -= _userExpMax;
+        _userExpMax = (_userExpMax * 1.25).toInt();
+        _showLevelUpDialog();
+      }
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.stars_rounded, color: Colors.amber, size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'บันทึก "$routineName" สำเร็จ! คะแนน: ${analysis.score}/10 (${analysis.grade}) รับ +${_isSubscribed ? 180 : 120} EXP และ 30 🪙!',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -897,7 +1037,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: [
           _buildDashboardTab(),
-          _buildWaterTab(),
+          _buildNutritionAndWaterTab(),
           _buildSleepTab(),
           _buildWorkoutTab(),
           QuestRankingScreen(
@@ -936,9 +1076,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               label: 'แดชบอร์ด',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.water_drop_outlined),
-              activeIcon: Icon(Icons.water_drop_rounded),
-              label: 'ดื่มน้ำ',
+              icon: Icon(Icons.restaurant_outlined),
+              activeIcon: Icon(Icons.restaurant_rounded),
+              label: 'อาหาร & น้ำ',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.bedtime_outlined),
@@ -966,7 +1106,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case 0:
         return 'Health Dashboard';
       case 1:
-        return 'Water Tracker';
+        return 'โภชนาการ & ดื่มน้ำ';
       case 2:
         return 'Sleep Tracker';
       case 3:
@@ -989,6 +1129,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
     final completedQuests = _quests.where((q) => q.isCompleted).length;
     final expPercent = (_userExp / _userExpMax).clamp(0.0, 1.0);
+    final totalCalories = _meals.fold<int>(0, (sum, m) => sum + m.calories);
+    final totalProtein = _meals.fold<double>(0, (sum, m) => sum + m.protein);
+    final cleanMealCount = _meals.where((m) => m.isClean).length;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1170,6 +1313,115 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             context: context,
             isSubscribed: _isSubscribed,
             onToggleSubscription: _toggleSubscription,
+          ),
+        ),
+
+        // Daily Nutrition Summary Card
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.restaurant_rounded, color: Color(0xFFD97706), size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'โภชนาการและการกินวันนี้',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                          Text(
+                            '$totalCalories / $_calorieGoal kcal • โปรตีน ${totalProtein.toStringAsFixed(0)}g',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _currentIndex = 1;
+                      _nutritionSubTabIndex = 0;
+                    }),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('ดูอาหาร', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Icon(Icons.chevron_right_rounded, size: 16),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: (totalCalories / _calorieGoal).clamp(0.0, 1.0),
+                  minHeight: 7,
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD97706)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showAddMealModal(context: context, onAddMeal: _addMeal),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text('บันทึกอาหาร', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFD97706),
+                        side: const BorderSide(color: Color(0xFFFDE68A)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showNutritionReviewModal(context: context, meals: _meals, isSubscribed: _isSubscribed),
+                      icon: const Icon(Icons.analytics_rounded, size: 16),
+                      label: const Text('AI รีวิวการกิน', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF0284C7),
+                        side: const BorderSide(color: Color(0xFFBAE6FD)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
 
@@ -1355,6 +1607,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onAction: () => setState(() => _currentIndex = 3),
         ),
 
+        const SizedBox(height: 16),
+
+        // Card 4: Nutrition & Diet
+        _buildSummaryCard(
+          title: 'โภชนาการและการกิน',
+          value: '$totalCalories / $_calorieGoal kcal',
+          subtitle: 'โปรตีน ${totalProtein.toStringAsFixed(0)}g • บันทึกแล้ว ${_meals.length} มื้อ ($cleanMealCount คลีน)',
+          icon: Icons.restaurant_rounded,
+          iconColor: const Color(0xFFD97706),
+          iconBgColor: const Color(0xFFFEF3C7),
+          progressValue: (totalCalories / _calorieGoal).clamp(0.0, 1.0),
+          progressColor: const Color(0xFFD97706),
+          actionLabel: 'ดูการกิน',
+          onAction: () => setState(() {
+            _currentIndex = 1;
+            _nutritionSubTabIndex = 0;
+          }),
+        ),
+
         const SizedBox(height: 24),
         const Text(
           'คำแนะนำเพื่อสุขภาพวันนี้',
@@ -1532,197 +1803,610 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   // ===========================================================================
-  // TAB 2: WATER TRACKER
+  // TAB 2: NUTRITION & WATER TRACKER
   // ===========================================================================
-  Widget _buildWaterTab() {
-    final double percent = (_currentWater / _waterGoal).clamp(0.0, 1.0);
-    final int remaining = (_waterGoal - _currentWater).clamp(0, _waterGoal);
+  Widget _buildNutritionAndWaterTab() {
+    final double waterPercent = (_currentWater / _waterGoal).clamp(0.0, 1.0);
+    final int waterRemaining = (_waterGoal - _currentWater).clamp(0, _waterGoal);
+
+    final totalCalories = _meals.fold<int>(0, (sum, m) => sum + m.calories);
+    final totalProtein = _meals.fold<double>(0, (sum, m) => sum + m.protein);
+    final totalCarbs = _meals.fold<double>(0, (sum, m) => sum + m.carbs);
+    final totalFat = _meals.fold<double>(0, (sum, m) => sum + m.fat);
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       children: [
-        // Main Water Progress Display
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-            child: Column(
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 180,
-                      height: 180,
-                      child: CircularProgressIndicator(
-                        value: percent,
-                        strokeWidth: 14,
-                        strokeCap: StrokeCap.round,
-                        backgroundColor: const Color(0xFFE2E8F0),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
-                      ),
+        // Top Segmented Switch
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _nutritionSubTabIndex = 0),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _nutritionSubTabIndex == 0 ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _nutritionSubTabIndex == 0
+                          ? [const BoxShadow(color: Color(0x0C000000), blurRadius: 6, offset: Offset(0, 2))]
+                          : null,
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.water_drop_rounded,
-                          size: 40,
-                          color: Color(0xFF0284C7),
+                        Icon(
+                          Icons.restaurant_rounded,
+                          size: 16,
+                          color: _nutritionSubTabIndex == 0 ? const Color(0xFF10B981) : const Color(0xFF64748B),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          '$_currentWater',
-                          style: const TextStyle(
-                            fontSize: 32,
+                          'อาหาร & โภชนาการ',
+                          style: TextStyle(
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        Text(
-                          '/ $_waterGoal ml',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE0F2FE),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${(percent * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: Color(0xFF0284C7),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            color: _nutritionSubTabIndex == 0 ? const Color(0xFF0F172A) : const Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: InkWell(
+                  onTap: () => setState(() => _nutritionSubTabIndex = 1),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _nutritionSubTabIndex == 1 ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: _nutritionSubTabIndex == 1
+                          ? [const BoxShadow(color: Color(0x0C000000), blurRadius: 6, offset: Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.water_drop_rounded,
+                          size: 16,
+                          color: _nutritionSubTabIndex == 1 ? const Color(0xFF0284C7) : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'ดื่มน้ำ (${_currentWater}ml)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: _nutritionSubTabIndex == 1 ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        if (_nutritionSubTabIndex == 0) ...[
+          // ==============================
+          // NUTRITION VIEW
+          // ==============================
+          // Hero Calories & Macros Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFD97706), Color(0xFFB45309)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD97706).withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.local_dining_rounded, color: Colors.white, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'NUTRITION TRACKER',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => showNutritionReviewModal(context: context, meals: _meals, isSubscribed: _isSubscribed),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.analytics_rounded, size: 14, color: Color(0xFFB45309)),
+                            SizedBox(width: 4),
+                            Text('AI รีวิวการกิน 🔍', style: TextStyle(color: Color(0xFFB45309), fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  remaining > 0
-                      ? 'ดื่มอีก $remaining ml จะบรรลุเป้าหมายของวันนี้!'
-                      : 'ยอดเยี่ยมมาก! คุณดื่มน้ำครบตามเป้าหมายแล้ว 🎉',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: remaining > 0 ? const Color(0xFF475569) : const Color(0xFF10B981),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '$totalCalories',
+                      style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, height: 1.0),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '/ $_calorieGoal kcal',
+                      style: const TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'เหลือ ${_calorieGoal - totalCalories > 0 ? _calorieGoal - totalCalories : 0} kcal',
+                      style: const TextStyle(color: Color(0xFFFEF3C7), fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: (totalCalories / _calorieGoal).clamp(0.0, 1.0),
+                    minHeight: 9,
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+
+                // 3 Macros Pills
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildMacroBadge('โปรตีน', '${totalProtein.toStringAsFixed(0)}/${_proteinGoal.toInt()}g', const Color(0xFF67E8F9)),
+                      Container(width: 1, height: 24, color: Colors.white24),
+                      _buildMacroBadge('คาร์บ', '${totalCarbs.toStringAsFixed(0)}/${_carbsGoal.toInt()}g', const Color(0xFFFDE68A)),
+                      Container(width: 1, height: 24, color: Colors.white24),
+                      _buildMacroBadge('ไขมัน', '${totalFat.toStringAsFixed(0)}/${_fatGoal.toInt()}g', const Color(0xFFFDA4AF)),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ),
 
-        const SizedBox(height: 24),
-        const Text(
-          'เพิ่มปริมาณน้ำดื่ม',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-        // Quick Add Buttons Row
-        Row(
-          children: [
-            Expanded(
-              child: _buildWaterAddButton(
-                amount: 250,
-                label: '+250 ml',
-                sublabel: '1 แก้วน้ำ',
-                icon: Icons.local_drink_rounded,
-                onTap: () => _addWater(250),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildWaterAddButton(
-                amount: 500,
-                label: '+500 ml',
-                sublabel: '1 ขวดน้ำ',
-                icon: Icons.water_damage_rounded,
-                onTap: () => _addWater(500),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _addWater(100),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('+100 ml (จิบน้ำ)'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF0284C7),
-                  side: const BorderSide(color: Color(0xFFBAE6FD)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => showAddMealModal(context: context, onAddMeal: _addMeal),
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                  label: const Text('บันทึกมื้ออาหาร'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _resetWater,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('รีเซ็ตข้อมูล'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFEF4444),
-                  side: const BorderSide(color: Color(0xFFFECACA)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => showNutritionReviewModal(context: context, meals: _meals, isSubscribed: _isSubscribed),
+                  icon: const Icon(Icons.rate_review_rounded, size: 20),
+                  label: const Text('ผลรีวิวโภชนาการ'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0284C7),
+                    side: const BorderSide(color: Color(0xFF0284C7), width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'ประวัติการดื่มน้ำวันนี้',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-            ),
-            Text(
-              '${_waterLogs.length} รายการ',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
-        if (_waterLogs.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+          // Logged Meals Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'มื้ออาหารที่บันทึกวันนี้',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+              Text(
+                '${_meals.length} มื้อ',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (_meals.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Center(
+                child: Text(
+                  'ยังไม่มีรายการอาหารวันนี้ กดปุ่ม "บันทึกมื้ออาหาร" เพื่อเริ่มต้น',
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ..._meals.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final meal = entry.value;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: const [BoxShadow(color: Color(0x06000000), blurRadius: 6, offset: Offset(0, 2))],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: meal.typeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(meal.emoji, style: const TextStyle(fontSize: 22)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: meal.typeColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  meal.typeName,
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: meal.typeColor),
+                                ),
+                              ),
+                              if (meal.isClean) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFECFDF5),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text('คลีน ✓', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            meal.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${meal.calories} kcal • โปรตีน ${meal.protein.toStringAsFixed(0)}g • คาร์บ ${meal.carbs.toStringAsFixed(0)}g • ไขมัน ${meal.fat.toStringAsFixed(0)}g',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF94A3B8), size: 18),
+                      onPressed: () => _deleteMeal(idx),
+                      tooltip: 'ลบรายการนี้',
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+          const SizedBox(height: 20),
+
+          // Quick add popular food section
+          const Text('ไอเดียเมนูสุขภาพยอดนิยม', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: defaultFoodLibrary.take(6).map((item) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    avatar: Text(item.emoji, style: const TextStyle(fontSize: 14)),
+                    label: Text('${item.name} (+${item.calories} kcal)'),
+                    labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    onPressed: () {
+                      _addMeal(
+                        MealLog(
+                          id: 'm_${DateTime.now().millisecondsSinceEpoch}',
+                          name: item.name,
+                          type: MealType.lunch,
+                          calories: item.calories,
+                          protein: item.protein,
+                          carbs: item.carbs,
+                          fat: item.fat,
+                          time: DateTime.now(),
+                          emoji: item.emoji,
+                          isClean: item.isClean,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
             ),
-            child: const Center(
-              child: Text(
-                'ยังไม่มีบันทึกการดื่มน้ำวันนี้ กดปุ่มด้านบนเพื่อบันทึก',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+          ),
+          const SizedBox(height: 30),
+        ] else ...[
+          // ==============================
+          // WATER INTAKE VIEW
+          // ==============================
+          // Main Water Progress Display
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+              child: Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 180,
+                        height: 180,
+                        child: CircularProgressIndicator(
+                          value: waterPercent,
+                          strokeWidth: 14,
+                          strokeCap: StrokeCap.round,
+                          backgroundColor: const Color(0xFFE2E8F0),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.water_drop_rounded,
+                            size: 40,
+                            color: Color(0xFF0284C7),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '$_currentWater',
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            '/ $_waterGoal ml',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${(waterPercent * 100).toInt()}%',
+                              style: const TextStyle(
+                                color: Color(0xFF0284C7),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    waterRemaining > 0
+                        ? 'ดื่มอีก $waterRemaining ml จะบรรลุเป้าหมายของวันนี้!'
+                        : 'ยอดเยี่ยมมาก! คุณดื่มน้ำครบตามเป้าหมายแล้ว 🎉',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: waterRemaining > 0 ? const Color(0xFF475569) : const Color(0xFF10B981),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
-          )
-        else
-          ..._waterLogs.map((log) => _buildWaterLogTile(log)),
-        const SizedBox(height: 20),
+          ),
+
+          const SizedBox(height: 24),
+          const Text(
+            'เพิ่มปริมาณน้ำดื่ม',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          ),
+          const SizedBox(height: 12),
+
+          // Quick Add Buttons Row
+          Row(
+            children: [
+              Expanded(
+                child: _buildWaterAddButton(
+                  amount: 250,
+                  label: '+250 ml',
+                  sublabel: '1 แก้วน้ำ',
+                  icon: Icons.local_drink_rounded,
+                  onTap: () => _addWater(250),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildWaterAddButton(
+                  amount: 500,
+                  label: '+500 ml',
+                  sublabel: '1 ขวดน้ำ',
+                  icon: Icons.water_damage_rounded,
+                  onTap: () => _addWater(500),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _addWater(100),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('+100 ml (จิบน้ำ)'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0284C7),
+                    side: const BorderSide(color: Color(0xFFBAE6FD)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _resetWater,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('รีเซ็ตข้อมูล'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFEF4444),
+                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'ประวัติการดื่มน้ำวันนี้',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+              Text(
+                '${_waterLogs.length} รายการ',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (_waterLogs.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Center(
+                child: Text(
+                  'ยังไม่มีบันทึกการดื่มน้ำวันนี้ กดปุ่มด้านบนเพื่อบันทึก',
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ..._waterLogs.map((log) => _buildWaterLogTile(log)),
+          const SizedBox(height: 20),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMacroBadge(String title, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(height: 2),
+        Text(title, style: const TextStyle(fontSize: 11, color: Colors.white70)),
       ],
     );
   }
@@ -1973,7 +2657,124 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               selectedColor: const Color(0xFFEEF2FF),
               labelStyle: TextStyle(
                 color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF64748B),
-                fontWeight: isSelected ? FontWeight.bold : FontWeig  // ===========================================================================
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+              side: BorderSide(
+                color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFE2E8F0),
+              ),
+              onSelected: (selected) {
+                if (selected) setState(() => _sleepQuality = quality);
+              },
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 20),
+        ElevatedButton.icon(
+          onPressed: _saveSleepLog,
+          icon: const Icon(Icons.save_rounded),
+          label: const Text('บันทึกข้อมูลการนอน'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF6366F1),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+        const Text(
+          'บันทึกล่าสุด',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+        ),
+        const SizedBox(height: 12),
+
+        ..._sleepRecords.map((record) => Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bedtime_rounded, color: Color(0xFF6366F1), size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${record.hours} ชม. (${record.quality})',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                    ),
+                    Text(
+                      '${record.bedTime.format(context)} - ${record.wakeTime.format(context)}',
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${record.date.day}/${record.date.month}',
+                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        )),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildTimePickerTile({
+    required String title,
+    required TimeOfDay time,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 6),
+                Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              time.format(context),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
   // TAB 4: WORKOUT MISSIONS & CHALLENGES
   // ===========================================================================
   Widget _buildWorkoutTab() {
@@ -2089,7 +2890,97 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+
+        // Custom Routine Builder Hero Card
+        Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0284C7).withValues(alpha: 0.28),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded, color: Color(0xFFFDE68A), size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'SMART ROUTINE BUILDER',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('25+ ท่าฝึก & AI รีวิว', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'จัดตารางฝึกด้วยตนเอง & รีวิวความสมดุล',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'เลือกท่าฝึก ปรับเซต/ครั้ง และให้ระบบประเมินความสมดุลกล้ามเนื้อ คำนวณแคลอรี และรับคำแนะนำจาก AI Coach',
+                style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showRoutineBuilderModal(
+                      context: context,
+                      isSubscribed: _isSubscribed,
+                      onSaveRoutine: _saveCustomRoutine,
+                    );
+                  },
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  label: const Text('เปิดตัวจัดตารางฝึก & รับผลรีวิว ✨'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF0369A1),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
 
         // Category Filter Chips
         SingleChildScrollView(
@@ -2126,6 +3017,136 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
         // Missions List
         ...filteredMissions.map((mission) => _buildMissionCard(mission)),
+
+        const SizedBox(height: 24),
+
+        // Custom Workout Logger Card
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.edit_note_rounded, color: Color(0xFF10B981), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'บันทึกตารางฝึกเอง ($_selectedTemplate Day)',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Template selector chips
+                Row(
+                  children: [
+                    _buildTemplateChip('Push', 'อก, ไหล่, หลังแขน', Icons.fitness_center_rounded),
+                    const SizedBox(width: 8),
+                    _buildTemplateChip('Pull', 'หลัง, หน้าแขน', Icons.sports_kabaddi_rounded),
+                    const SizedBox(width: 8),
+                    _buildTemplateChip('Legs', 'ขา, ก้น, ท้อง', Icons.directions_run_rounded),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Duration field
+                const Text('ระยะเวลาฝึก (นาที)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _durationController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.timer_outlined, color: Color(0xFF64748B)),
+                    suffixText: 'นาที',
+                    hintText: 'เช่น 45, 60',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Exercises details
+                const Text('ท่าฝึกและเซต', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _exerciseController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'ระบุท่าออกกำลังกายและเซต...',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          showRoutineBuilderModal(
+                            context: context,
+                            isSubscribed: _isSubscribed,
+                            onSaveRoutine: _saveCustomRoutine,
+                          );
+                        },
+                        icon: const Icon(Icons.analytics_rounded, size: 18),
+                        label: const Text('จัดละเอียด & รีวิว'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF0284C7),
+                          side: const BorderSide(color: Color(0xFF0284C7)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _addWorkoutLog,
+                        icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                        label: const Text('บันทึกทันที'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
 
         const SizedBox(height: 24),
 
@@ -2201,10 +3222,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  color: mission.difficultyColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(mission.icon, color: const Color(0xFF10B981), size: 26),
+                child: Icon(mission.icon, color: mission.difficultyColor, size: 28),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -2214,7 +3235,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: mission.difficultyColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
@@ -2224,56 +3245,72 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             style: TextStyle(
                               color: mission.difficultyColor,
                               fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          mission.category,
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            mission.category,
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       mission.title,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             mission.subtitle,
             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // Pills row
-          Row(
+          // Stats pills
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
             children: [
-              _buildBadgePill(Icons.timer_outlined, '${mission.durationMinutes} นาที', const Color(0xFF0284C7)),
-              const SizedBox(width: 8),
-              _buildBadgePill(Icons.local_fire_department_rounded, '~${mission.caloriesBurn} kcal', const Color(0xFFEF4444)),
-              const SizedBox(width: 8),
-              _buildBadgePill(Icons.bolt_rounded, '+$expReward EXP', const Color(0xFFF59E0B)),
+              _buildBadgePill(Icons.timer_outlined, '${mission.durationMinutes} นาที', const Color(0xFF6366F1)),
+              _buildBadgePill(Icons.local_fire_department_rounded, '${mission.caloriesBurn} kcal', const Color(0xFFF59E0B)),
+              _buildBadgePill(Icons.stars_rounded, '+$expReward EXP', const Color(0xFF10B981)),
             ],
           ),
+
           const SizedBox(height: 14),
 
-          // Action button
+          // Action Button
           SizedBox(
             width: double.infinity,
             child: mission.isCompletedToday
                 ? Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
+                      color: const Color(0xFFECFDF5),
                       borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -2326,82 +3363,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
-    );
-  }�ำลังกายและเซต...',
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _addWorkoutLog,
-                    icon: const Icon(Icons.check_circle_outline_rounded),
-                    label: const Text('บันทึกการออกกำลังกาย'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'ประวัติการออกกำลังกาย',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-            ),
-            Text(
-              '${_workoutRecords.length} ครั้ง',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        if (_workoutRecords.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Text(
-                'ยังไม่มีประวัติการออกกำลังกาย เริ่มบันทึกกันเลย!',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-              ),
-            ),
-          )
-        else
-          ..._workoutRecords.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final record = entry.value;
-            return _buildWorkoutHistoryCard(record, idx);
-          }),
-        const SizedBox(height: 20),
-      ],
     );
   }
 

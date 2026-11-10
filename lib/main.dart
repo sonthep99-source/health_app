@@ -1,4 +1,16 @@
 import 'package:flutter/material.dart';
+
+import 'models/health_models.dart';
+import 'theme/app_theme.dart';
+import 'state/app_state.dart';
+import 'screens/dashboard_tab_screen.dart';
+import 'screens/food_ai_scanner_screen.dart';
+import 'screens/trackers_screen.dart';
+import 'screens/pet_sanctuary_screen.dart';
+import 'screens/shop_coach_screen.dart';
+import 'screens/coin_shop_screen.dart';
+import 'screens/boss_battle_screen.dart';
+import 'screens/premium_subscription_screen.dart';
 import 'quest_ranking_screen.dart';
 import 'workout_missions.dart';
 import 'subscription_insights.dart';
@@ -9,45 +21,38 @@ void main() {
   runApp(const MyApp());
 }
 
-/// Root Application Widget
-class MyApp extends StatelessWidget {
+/// Root Application Widget with State & Dark Modern Gamified Theme
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final AppState _appState = AppState();
+  final ThemeProvider _themeProvider = ThemeProvider();
+
+  @override
+  void dispose() {
+    _appState.dispose();
+    _themeProvider.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Health Tracker',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0284C7),
-          primary: const Color(0xFF0284C7),
-          surface: Colors.white,
+    return AppScope(
+      notifier: _appState,
+      child: ListenableBuilder(
+        listenable: _themeProvider,
+        builder: (context, _) => MaterialApp(
+          title: 'HABITA',
+          debugShowCheckedModeBanner: false,
+          theme: _themeProvider.themeData,
+          home: MainNavigationScreen(themeProvider: _themeProvider),
         ),
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF0F172A),
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-          ),
-        ),
-        fontFamily: 'sans-serif',
       ),
-      home: const MainNavigationScreen(),
     );
   }
 }
@@ -100,7 +105,8 @@ class WorkoutRecord {
 // ---------------------------------------------------------------------------
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final ThemeProvider themeProvider;
+  const MainNavigationScreen({super.key, required this.themeProvider});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -113,9 +119,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentWater = 1250;
   final int _waterGoal = 2000;
   final List<WaterLog> _waterLogs = [
-    WaterLog(amount: 500, time: DateTime.now().subtract(const Duration(hours: 4))),
-    WaterLog(amount: 250, time: DateTime.now().subtract(const Duration(hours: 2))),
-    WaterLog(amount: 500, time: DateTime.now().subtract(const Duration(minutes: 40))),
+    WaterLog(
+      amount: 500,
+      time: DateTime.now().subtract(const Duration(hours: 4)),
+    ),
+    WaterLog(
+      amount: 250,
+      time: DateTime.now().subtract(const Duration(hours: 2)),
+    ),
+    WaterLog(
+      amount: 500,
+      time: DateTime.now().subtract(const Duration(minutes: 40)),
+    ),
   ];
 
   // Nutrition & Meal Tracker State
@@ -172,11 +187,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final TextEditingController _exerciseController = TextEditingController(
     text: 'Bench Press 4 เซต, Incline DB Press 3 เซต, Tricep Pushdown 3 เซต',
   );
-  final TextEditingController _durationController = TextEditingController(text: '45');
+  final TextEditingController _durationController = TextEditingController(
+    text: '45',
+  );
   final List<WorkoutRecord> _workoutRecords = [
     WorkoutRecord(
       category: 'Push',
-      exercises: 'Bench Press 4 เซต, Incline DB Press 3 เซต, Tricep Pushdown 3 เซต',
+      exercises:
+          'Bench Press 4 เซต, Incline DB Press 3 เซต, Tricep Pushdown 3 เซต',
       durationMinutes: 45,
       date: DateTime.now(),
     ),
@@ -241,7 +259,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         currentProgress: _sleepHours.toInt(),
         targetProgress: 7,
         unit: 'ชม.',
-        targetTabIndex: 2,
+        targetTabIndex: 1,
       ),
       QuestItem(
         id: 'q3',
@@ -255,7 +273,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         currentProgress: _workoutDuration,
         targetProgress: 30,
         unit: 'นาที',
-        targetTabIndex: 3,
+        targetTabIndex: 1,
       ),
       QuestItem(
         id: 'q4',
@@ -413,7 +431,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       } else if (q.id == 'q2') {
         q.currentProgress = _sleepHours.toInt();
       } else if (q.id == 'q3') {
-        final totalMins = _workoutRecords.fold<int>(0, (sum, i) => sum + i.durationMinutes);
+        final totalMins = _workoutRecords.fold<int>(
+          0,
+          (sum, i) => sum + i.durationMinutes,
+        );
         q.currentProgress = totalMins;
       } else if (q.id == 'q4') {
         final cleanCount = _meals.where((m) => m.isClean).length;
@@ -443,7 +464,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.restaurant_rounded, color: Color(0xFF10B981), size: 24),
+            const Icon(
+              Icons.restaurant_rounded,
+              color: Color(0xFF10B981),
+              size: 24,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -547,7 +572,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ],
               ),
-              child: const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 48),
+              child: const Icon(
+                Icons.emoji_events_rounded,
+                color: Colors.white,
+                size: 48,
+              ),
             ),
             const SizedBox(height: 18),
             const Text(
@@ -585,11 +614,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFF59E0B),
                 foregroundColor: const Color(0xFF0F172A),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 elevation: 0,
               ),
-              child: const Text('ยอดเยี่ยมเลย!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              child: const Text(
+                'ยอดเยี่ยมเลย!',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
             ),
           ],
         ),
@@ -607,7 +644,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         content: Row(
           children: [
             Icon(
-              status ? Icons.workspace_premium_rounded : Icons.info_outline_rounded,
+              status
+                  ? Icons.workspace_premium_rounded
+                  : Icons.info_outline_rounded,
               color: status ? const Color(0xFFF59E0B) : Colors.white,
               size: 24,
             ),
@@ -632,7 +671,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _completeWorkoutMission(WorkoutMission mission) {
     setState(() {
       mission.isCompletedToday = true;
-      final expGain = _isSubscribed ? (mission.expReward * 1.5).toInt() : mission.expReward;
+      final expGain = _isSubscribed
+          ? (mission.expReward * 1.5).toInt()
+          : mission.expReward;
       _userExp += expGain;
       _userCoins += mission.coinReward;
 
@@ -662,7 +703,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.fitness_center_rounded, color: Color(0xFF10B981), size: 24),
+            const Icon(
+              Icons.fitness_center_rounded,
+              color: Color(0xFF10B981),
+              size: 24,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -767,17 +812,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('รีเซ็ตการดื่มน้ำ?'),
-        content: const Text('คุณต้องการรีเซ็ตปริมาณน้ำดื่มทั้งหมดของวันนี้เป็น 0 ml ใช่หรือไม่?'),
+        content: const Text(
+          'คุณต้องการรีเซ็ตปริมาณน้ำดื่มทั้งหมดของวันนี้เป็น 0 ml ใช่หรือไม่?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+            child: const Text(
+              'ยกเลิก',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -813,10 +865,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   void _selectTime(bool isBedTime) async {
     final initial = isBedTime ? _bedTime : _wakeTime;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
+    final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked != null) {
       setState(() {
         if (isBedTime) {
@@ -889,7 +938,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('บันทึกการฝึก $_selectedTemplate ($duration นาที) สำเร็จ!'),
+        content: Text(
+          'บันทึกการฝึก $_selectedTemplate ($duration นาที) สำเร็จ!',
+        ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: const Color(0xFF10B981),
       ),
@@ -907,22 +958,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Build Screen Tabs
   // ---------------------------------------------------------------------------
 
+  int _tab4SubIndex = 0;
+
   @override
   Widget build(BuildContext context) {
+    final appState = AppScope.of(context);
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFE0F2FE),
+                color: AppTheme.cyan.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.favorite_rounded,
-                color: Color(0xFF0284C7),
+                color: AppTheme.cyan,
                 size: 20,
               ),
             ),
@@ -931,26 +989,75 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
         ),
         actions: [
-          // VIP Pro Badge / Subscribe Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: _currentIndex == 3
+                ? FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.amber,
+                      foregroundColor: const Color(0xFF172033),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.sports_martial_arts_rounded),
+                    label: const Text('ชาเลนจ์'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BossBattleScreen(),
+                      ),
+                    ),
+                  )
+                : IconButton(
+                    tooltip: 'ชาเลนจ์มอนสเตอร์',
+                    icon: const Icon(Icons.sports_martial_arts_rounded),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BossBattleScreen(),
+                      ),
+                    ),
+                  ),
+          ),
+          PopupMenuButton<HealthQuestTheme>(
+            tooltip: 'เปลี่ยนธีม',
+            icon: const Icon(Icons.palette_outlined),
+            onSelected: widget.themeProvider.setTheme,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: HealthQuestTheme.deepNavy,
+                child: Text('Deep Navy'),
+              ),
+              PopupMenuItem(
+                value: HealthQuestTheme.cyberpunkNeon,
+                child: Text('Cyberpunk Neon'),
+              ),
+              PopupMenuItem(
+                value: HealthQuestTheme.forestMint,
+                child: Text('Forest Mint'),
+              ),
+            ],
+          ),
+          // PRO / FREE Mode Switcher
           InkWell(
-            onTap: () => showSubscriptionModal(
-              context: context,
-              isSubscribed: _isSubscribed,
-              onToggleSubscription: _toggleSubscription,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PremiumSubscriptionScreen(),
+              ),
             ),
             borderRadius: BorderRadius.circular(20),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                gradient: _isSubscribed
+                gradient: appState.isPro
                     ? const LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
                       )
                     : null,
-                color: _isSubscribed ? null : const Color(0xFFF1F5F9),
+                color: appState.isPro ? null : Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _isSubscribed ? const Color(0xFFF59E0B) : const Color(0xFFCBD5E1),
+                  color: appState.isPro ? Colors.transparent : Colors.white24,
                 ),
               ),
               child: Row(
@@ -958,16 +1065,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 children: [
                   Icon(
                     Icons.workspace_premium_rounded,
-                    color: _isSubscribed ? Colors.white : const Color(0xFF64748B),
+                    color: appState.isPro
+                        ? Colors.white
+                        : AppTheme.textSecondary,
                     size: 14,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _isSubscribed ? 'VIP PRO' : 'PRO',
+                    appState.isPro ? 'PRO ACTIVE' : 'FREE MODE',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: _isSubscribed ? Colors.white : const Color(0xFF475569),
+                      color: appState.isPro
+                          ? Colors.white
+                          : AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -976,70 +1087,48 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Coins Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF3C7),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFDE68A)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🪙', style: TextStyle(fontSize: 12)),
-                const SizedBox(width: 4),
-                Text(
-                  '$_userCoins',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF92400E),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Streak Badge
+          // Coins Badge (Tap opens Shop)
           InkWell(
-            onTap: () => setState(() => _currentIndex = 4),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CoinShopScreen()),
+            ),
             borderRadius: BorderRadius.circular(20),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
+                color: AppTheme.amber.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                border: Border.all(color: AppTheme.amber.withOpacity(0.4)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('🔥', style: TextStyle(fontSize: 12)),
+                  const Text('🪙', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 4),
                   Text(
-                    '$_userStreak วัน',
+                    '${appState.userCoins}',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFB91C1C),
+                      color: AppTheme.amber,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
         ],
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          _buildDashboardTab(),
-          _buildNutritionAndWaterTab(),
-          _buildSleepTab(),
-          _buildWorkoutTab(),
+          DashboardTabScreen(
+            onNavigateTab: (index) => setState(() => _currentIndex = index),
+          ),
+          const TrackersScreen(),
+          const PetSanctuaryScreen(),
           QuestRankingScreen(
             userLevel: _userLevel,
             userExp: _userExp,
@@ -1052,48 +1141,78 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             onClaimQuest: _claimQuest,
             onNavigateToTab: (index) => setState(() => _currentIndex = index),
           ),
+          const ShopCoachScreen(),
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          border: Border(
+            top: BorderSide(color: Colors.white.withOpacity(0.08), width: 1),
+          ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF0284C7),
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard_rounded),
-              label: 'แดชบอร์ด',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12, top: 6, bottom: 2),
+                child: FilledButton.icon(
+                  onPressed: _showQuickActions,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('บันทึกด่วน'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.cyan,
+                    foregroundColor: Colors.white,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_outlined),
-              activeIcon: Icon(Icons.restaurant_rounded),
-              label: 'อาหาร & น้ำ',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bedtime_outlined),
-              activeIcon: Icon(Icons.bedtime_rounded),
-              label: 'การนอน',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.fitness_center_outlined),
-              activeIcon: Icon(Icons.fitness_center_rounded),
-              label: 'ออกกำลังกาย',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.emoji_events_outlined),
-              activeIcon: Icon(Icons.emoji_events_rounded),
-              label: 'เควส & อันดับ',
+            BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) => setState(() => _currentIndex = index),
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: AppTheme.textMuted,
+              selectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
+              elevation: 0,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.dashboard_outlined),
+                  activeIcon: Icon(Icons.dashboard_rounded),
+                  label: 'แดชบอร์ด',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.track_changes_outlined),
+                  activeIcon: Icon(Icons.track_changes_rounded),
+                  label: 'Trackers',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.pets_outlined),
+                  activeIcon: Icon(Icons.pets_rounded),
+                  label: 'Pet Room',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.leaderboard_outlined),
+                  activeIcon: Icon(Icons.leaderboard_rounded),
+                  label: 'เควส & อันดับ',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.storefront_outlined),
+                  activeIcon: Icon(Icons.storefront_rounded),
+                  label: 'Shop & AI',
+                ),
+              ],
             ),
           ],
         ),
@@ -1104,18 +1223,91 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   String _getAppBarTitle() {
     switch (_currentIndex) {
       case 0:
-        return 'Health Dashboard';
+        return 'HABITA';
       case 1:
-        return 'โภชนาการ & ดื่มน้ำ';
+        return 'Health Trackers & Sync';
       case 2:
-        return 'Sleep Tracker';
+        return 'Pet Sanctuary Room';
       case 3:
-        return 'Workout Log';
+        return 'Leaderboard & Quests';
       case 4:
-        return 'เควส & ตารางอันดับ';
+        return 'Health Shop & AI Coach';
       default:
-        return 'Health Tracker';
+        return 'HABITA';
     }
+  }
+
+  void _showQuickActions() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppTheme.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'บันทึกสุขภาพด่วน',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(
+                  Icons.water_drop_rounded,
+                  color: AppTheme.cyan,
+                ),
+                title: const Text('บันทึกน้ำ +250 ml'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  AppScope.of(context).addWater(250);
+                  _addWater(250);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.restaurant_rounded,
+                  color: AppTheme.mint,
+                ),
+                title: const Text('เพิ่มมื้ออาหาร'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  showAddMealModal(context: context, onAddMeal: _addMeal);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.timer_rounded, color: AppTheme.amber),
+                title: const Text('เริ่มบันทึกออกกำลังกาย'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  final state = AppScope.of(context);
+                  if (!state.isLiveTimerRunning)
+                    state.startLiveWorkout(state.workoutPlans.first);
+                  setState(() => _currentIndex = 1);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: AppTheme.purple,
+                ),
+                title: const Text('สแกนอาหารด้วย AI'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FoodAiScannerScreen(
+                      onGoToPetRoom: () => setState(() => _currentIndex = 2),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ===========================================================================
@@ -1178,16 +1370,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
-                            child: Icon(Icons.person_rounded, color: Colors.white, size: 28),
+                            child: Icon(
+                              Icons.person_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
                           ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF59E0B),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF0F172A), width: 1.5),
+                          border: Border.all(
+                            color: const Color(0xFF0F172A),
+                            width: 1.5,
+                          ),
                         ),
                         child: Text(
                           'LV.$_userLevel',
@@ -1221,7 +1423,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0x3338BDF8),
                                 borderRadius: BorderRadius.circular(6),
@@ -1251,7 +1456,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   // Coins
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0x22FFFFFF),
                       borderRadius: BorderRadius.circular(12),
@@ -1282,11 +1490,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 children: [
                   Text(
                     'EXP: $_userExp / $_userExpMax',
-                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   Text(
                     '${(expPercent * 100).toInt()}% เพื่อ LV.${_userLevel + 1}',
-                    style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 11, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Color(0xFFF59E0B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -1297,7 +1513,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   value: expPercent,
                   minHeight: 7,
                   backgroundColor: const Color(0x33FFFFFF),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFFF59E0B),
+                  ),
                 ),
               ),
             ],
@@ -1346,7 +1564,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           color: const Color(0xFFFEF3C7),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.restaurant_rounded, color: Color(0xFFD97706), size: 20),
+                        child: const Icon(
+                          Icons.restaurant_rounded,
+                          color: Color(0xFFD97706),
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -1354,11 +1576,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         children: [
                           const Text(
                             'โภชนาการและการกินวันนี้',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                           Text(
                             '$totalCalories / $_calorieGoal kcal • โปรตีน ${totalProtein.toStringAsFixed(0)}g',
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
@@ -1372,7 +1601,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('ดูอาหาร', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          'ดูอาหาร',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                         Icon(Icons.chevron_right_rounded, size: 16),
                       ],
                     ),
@@ -1386,7 +1621,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   value: (totalCalories / _calorieGoal).clamp(0.0, 1.0),
                   minHeight: 7,
                   backgroundColor: const Color(0xFFF1F5F9),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD97706)),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFFD97706),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1394,28 +1631,51 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => showAddMealModal(context: context, onAddMeal: _addMeal),
+                      onPressed: () => showAddMealModal(
+                        context: context,
+                        onAddMeal: _addMeal,
+                      ),
                       icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('บันทึกอาหาร', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'บันทึกอาหาร',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFD97706),
                         side: const BorderSide(color: Color(0xFFFDE68A)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => showNutritionReviewModal(context: context, meals: _meals, isSubscribed: _isSubscribed),
+                      onPressed: () => showNutritionReviewModal(
+                        context: context,
+                        meals: _meals,
+                        isSubscribed: _isSubscribed,
+                      ),
                       icon: const Icon(Icons.analytics_rounded, size: 16),
-                      label: const Text('AI รีวิวการกิน', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'AI รีวิวการกิน',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0284C7),
                         side: const BorderSide(color: Color(0xFFBAE6FD)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -1454,7 +1714,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           color: const Color(0xFFFEF3C7),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.stars_rounded, color: Color(0xFFD97706), size: 20),
+                        child: const Icon(
+                          Icons.stars_rounded,
+                          color: Color(0xFFD97706),
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -1462,11 +1726,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         children: [
                           const Text(
                             'ภารกิจประจำวันนี้',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                           Text(
                             'สำเร็จแล้ว $completedQuests จาก ${_quests.length} เควส',
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
@@ -1477,7 +1748,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('ดูทั้งหมด', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          'ดูทั้งหมด',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                         Icon(Icons.chevron_right_rounded, size: 16),
                       ],
                     ),
@@ -1488,10 +1765,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
-                  value: _quests.isNotEmpty ? (completedQuests / _quests.length) : 0,
+                  value: _quests.isNotEmpty
+                      ? (completedQuests / _quests.length)
+                      : 0,
                   minHeight: 6,
                   backgroundColor: const Color(0xFFF1F5F9),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF10B981),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -1503,8 +1784,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        q.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                        color: q.isCompleted ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                        q.isCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: q.isCompleted
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF94A3B8),
                         size: 18,
                       ),
                       const SizedBox(width: 8),
@@ -1513,9 +1798,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           q.title,
                           style: TextStyle(
                             fontSize: 13,
-                            color: q.isClaimed ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                            color: q.isClaimed
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF334155),
                             fontWeight: FontWeight.w500,
-                            decoration: q.isClaimed ? TextDecoration.lineThrough : null,
+                            decoration: q.isClaimed
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
                         ),
                       ),
@@ -1524,24 +1813,41 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           onTap: () => _claimQuest(q),
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF10B981),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
                               'รับรางวัล',
-                              style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         )
                       else if (!q.isCompleted)
                         Text(
                           '${q.currentProgress}/${q.targetProgress} ${q.unit}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.bold,
+                          ),
                         )
                       else
-                        const Text('✓ รับแล้ว', style: TextStyle(fontSize: 11, color: Color(0xFF10B981))),
+                        const Text(
+                          '✓ รับแล้ว',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
                     ],
                   ),
                 );
@@ -1553,7 +1859,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         const SizedBox(height: 24),
         const Text(
           'สรุปกิจกรรมวันนี้',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -1577,7 +1887,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         _buildSummaryCard(
           title: 'ชั่วโมงการนอนหลับ',
           value: '$_sleepHours ชั่วโมง',
-          subtitle: 'นอน ${_bedTime.format(context)} • ตื่น ${_wakeTime.format(context)} ($_sleepQuality)',
+          subtitle:
+              'นอน ${_bedTime.format(context)} • ตื่น ${_wakeTime.format(context)} ($_sleepQuality)',
           icon: Icons.bedtime_rounded,
           iconColor: const Color(0xFF6366F1),
           iconBgColor: const Color(0xFFEEF2FF),
@@ -1613,7 +1924,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         _buildSummaryCard(
           title: 'โภชนาการและการกิน',
           value: '$totalCalories / $_calorieGoal kcal',
-          subtitle: 'โปรตีน ${totalProtein.toStringAsFixed(0)}g • บันทึกแล้ว ${_meals.length} มื้อ ($cleanMealCount คลีน)',
+          subtitle:
+              'โปรตีน ${totalProtein.toStringAsFixed(0)}g • บันทึกแล้ว ${_meals.length} มื้อ ($cleanMealCount คลีน)',
           icon: Icons.restaurant_rounded,
           iconColor: const Color(0xFFD97706),
           iconBgColor: const Color(0xFFFEF3C7),
@@ -1629,7 +1941,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         const SizedBox(height: 24),
         const Text(
           'คำแนะนำเพื่อสุขภาพวันนี้',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -1720,13 +2036,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   onPressed: onAction,
                   style: TextButton.styleFrom(
                     foregroundColor: iconColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(actionLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      Text(
+                        actionLabel,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
                       const Icon(Icons.chevron_right_rounded, size: 18),
                     ],
                   ),
@@ -1793,7 +2118,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               const SizedBox(height: 2),
               Text(
                 desc,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  height: 1.4,
+                ),
               ),
             ],
           ),
@@ -1807,7 +2136,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // ===========================================================================
   Widget _buildNutritionAndWaterTab() {
     final double waterPercent = (_currentWater / _waterGoal).clamp(0.0, 1.0);
-    final int waterRemaining = (_waterGoal - _currentWater).clamp(0, _waterGoal);
+    final int waterRemaining = (_waterGoal - _currentWater).clamp(
+      0,
+      _waterGoal,
+    );
 
     final totalCalories = _meals.fold<int>(0, (sum, m) => sum + m.calories);
     final totalProtein = _meals.fold<double>(0, (sum, m) => sum + m.protein);
@@ -1834,10 +2166,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: _nutritionSubTabIndex == 0 ? Colors.white : Colors.transparent,
+                      color: _nutritionSubTabIndex == 0
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: _nutritionSubTabIndex == 0
-                          ? [const BoxShadow(color: Color(0x0C000000), blurRadius: 6, offset: Offset(0, 2))]
+                          ? [
+                              const BoxShadow(
+                                color: Color(0x0C000000),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
                           : null,
                     ),
                     child: Row(
@@ -1846,7 +2186,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         Icon(
                           Icons.restaurant_rounded,
                           size: 16,
-                          color: _nutritionSubTabIndex == 0 ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                          color: _nutritionSubTabIndex == 0
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF64748B),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -1854,7 +2196,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: _nutritionSubTabIndex == 0 ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                            color: _nutritionSubTabIndex == 0
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFF64748B),
                           ),
                         ),
                       ],
@@ -1869,10 +2213,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: _nutritionSubTabIndex == 1 ? Colors.white : Colors.transparent,
+                      color: _nutritionSubTabIndex == 1
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: _nutritionSubTabIndex == 1
-                          ? [const BoxShadow(color: Color(0x0C000000), blurRadius: 6, offset: Offset(0, 2))]
+                          ? [
+                              const BoxShadow(
+                                color: Color(0x0C000000),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
                           : null,
                     ),
                     child: Row(
@@ -1881,7 +2233,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         Icon(
                           Icons.water_drop_rounded,
                           size: 16,
-                          color: _nutritionSubTabIndex == 1 ? const Color(0xFF0284C7) : const Color(0xFF64748B),
+                          color: _nutritionSubTabIndex == 1
+                              ? const Color(0xFF0284C7)
+                              : const Color(0xFF64748B),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -1889,7 +2243,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: _nutritionSubTabIndex == 1 ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                            color: _nutritionSubTabIndex == 1
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFF64748B),
                           ),
                         ),
                       ],
@@ -1932,7 +2288,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
@@ -1940,19 +2299,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.local_dining_rounded, color: Colors.white, size: 14),
+                          Icon(
+                            Icons.local_dining_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'NUTRITION TRACKER',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     InkWell(
-                      onTap: () => showNutritionReviewModal(context: context, meals: _meals, isSubscribed: _isSubscribed),
+                      onTap: () => showNutritionReviewModal(
+                        context: context,
+                        meals: _meals,
+                        isSubscribed: _isSubscribed,
+                      ),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
@@ -1960,9 +2334,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.analytics_rounded, size: 14, color: Color(0xFFB45309)),
+                            Icon(
+                              Icons.analytics_rounded,
+                              size: 14,
+                              color: Color(0xFFB45309),
+                            ),
                             SizedBox(width: 4),
-                            Text('AI รีวิวการกิน 🔍', style: TextStyle(color: Color(0xFFB45309), fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text(
+                              'AI รีวิวการกิน 🔍',
+                              style: TextStyle(
+                                color: Color(0xFFB45309),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1976,17 +2361,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   children: [
                     Text(
                       '$totalCalories',
-                      style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: Colors.white, height: 1.0),
+                      style: const TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '/ $_calorieGoal kcal',
-                      style: const TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Spacer(),
                     Text(
                       'เหลือ ${_calorieGoal - totalCalories > 0 ? _calorieGoal - totalCalories : 0} kcal',
-                      style: const TextStyle(color: Color(0xFFFEF3C7), fontSize: 13, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Color(0xFFFEF3C7),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -1997,14 +2395,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     value: (totalCalories / _calorieGoal).clamp(0.0, 1.0),
                     minHeight: 9,
                     backgroundColor: Colors.white.withValues(alpha: 0.25),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.white,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // 3 Macros Pills
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
@@ -2012,11 +2415,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildMacroBadge('โปรตีน', '${totalProtein.toStringAsFixed(0)}/${_proteinGoal.toInt()}g', const Color(0xFF67E8F9)),
+                      _buildMacroBadge(
+                        'โปรตีน',
+                        '${totalProtein.toStringAsFixed(0)}/${_proteinGoal.toInt()}g',
+                        const Color(0xFF67E8F9),
+                      ),
                       Container(width: 1, height: 24, color: Colors.white24),
-                      _buildMacroBadge('คาร์บ', '${totalCarbs.toStringAsFixed(0)}/${_carbsGoal.toInt()}g', const Color(0xFFFDE68A)),
+                      _buildMacroBadge(
+                        'คาร์บ',
+                        '${totalCarbs.toStringAsFixed(0)}/${_carbsGoal.toInt()}g',
+                        const Color(0xFFFDE68A),
+                      ),
                       Container(width: 1, height: 24, color: Colors.white24),
-                      _buildMacroBadge('ไขมัน', '${totalFat.toStringAsFixed(0)}/${_fatGoal.toInt()}g', const Color(0xFFFDA4AF)),
+                      _buildMacroBadge(
+                        'ไขมัน',
+                        '${totalFat.toStringAsFixed(0)}/${_fatGoal.toInt()}g',
+                        const Color(0xFFFDA4AF),
+                      ),
                     ],
                   ),
                 ),
@@ -2031,14 +2446,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => showAddMealModal(context: context, onAddMeal: _addMeal),
+                  onPressed: () =>
+                      showAddMealModal(context: context, onAddMeal: _addMeal),
                   icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
                   label: const Text('บันทึกมื้ออาหาร'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF10B981),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -2046,14 +2464,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => showNutritionReviewModal(context: context, meals: _meals, isSubscribed: _isSubscribed),
+                  onPressed: () => showNutritionReviewModal(
+                    context: context,
+                    meals: _meals,
+                    isSubscribed: _isSubscribed,
+                  ),
                   icon: const Icon(Icons.rate_review_rounded, size: 20),
                   label: const Text('ผลรีวิวโภชนาการ'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF0284C7),
-                    side: const BorderSide(color: Color(0xFF0284C7), width: 1.5),
+                    side: const BorderSide(
+                      color: Color(0xFF0284C7),
+                      width: 1.5,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -2068,11 +2495,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: [
               const Text(
                 'มื้ออาหารที่บันทึกวันนี้',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               Text(
                 '${_meals.length} มื้อ',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -2104,7 +2539,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
-                  boxShadow: const [BoxShadow(color: Color(0x06000000), blurRadius: 6, offset: Offset(0, 2))],
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x06000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -2114,7 +2555,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         color: meal.typeColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(meal.emoji, style: const TextStyle(fontSize: 22)),
+                      child: Text(
+                        meal.emoji,
+                        style: const TextStyle(fontSize: 22),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -2124,25 +2568,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: meal.typeColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   meal.typeName,
-                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: meal.typeColor),
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: meal.typeColor,
+                                  ),
                                 ),
                               ),
                               if (meal.isClean) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFECFDF5),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: const Text('คลีน ✓', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+                                  child: const Text(
+                                    'คลีน ✓',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF059669),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
@@ -2150,18 +2611,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           const SizedBox(height: 4),
                           Text(
                             meal.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${meal.calories} kcal • โปรตีน ${meal.protein.toStringAsFixed(0)}g • คาร์บ ${meal.carbs.toStringAsFixed(0)}g • ไขมัน ${meal.fat.toStringAsFixed(0)}g',
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF94A3B8), size: 18),
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 18,
+                      ),
                       onPressed: () => _deleteMeal(idx),
                       tooltip: 'ลบรายการนี้',
                     ),
@@ -2173,7 +2645,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           const SizedBox(height: 20),
 
           // Quick add popular food section
-          const Text('ไอเดียเมนูสุขภาพยอดนิยม', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
+          const Text(
+            'ไอเดียเมนูสุขภาพยอดนิยม',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -2182,12 +2661,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ActionChip(
-                    avatar: Text(item.emoji, style: const TextStyle(fontSize: 14)),
+                    avatar: Text(
+                      item.emoji,
+                      style: const TextStyle(fontSize: 14),
+                    ),
                     label: Text('${item.name} (+${item.calories} kcal)'),
-                    labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                    labelStyle: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF334155),
+                    ),
                     backgroundColor: Colors.white,
                     side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     onPressed: () {
                       _addMeal(
                         MealLog(
@@ -2231,7 +2719,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           strokeWidth: 14,
                           strokeCap: StrokeCap.round,
                           backgroundColor: const Color(0xFFE2E8F0),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF0284C7),
+                          ),
                         ),
                       ),
                       Column(
@@ -2261,7 +2751,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE0F2FE),
                               borderRadius: BorderRadius.circular(10),
@@ -2287,7 +2780,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: waterRemaining > 0 ? const Color(0xFF475569) : const Color(0xFF10B981),
+                      color: waterRemaining > 0
+                          ? const Color(0xFF475569)
+                          : const Color(0xFF10B981),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -2299,7 +2794,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           const SizedBox(height: 24),
           const Text(
             'เพิ่มปริมาณน้ำดื่ม',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -2341,7 +2840,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     foregroundColor: const Color(0xFF0284C7),
                     side: const BorderSide(color: Color(0xFFBAE6FD)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -2355,7 +2856,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     foregroundColor: const Color(0xFFEF4444),
                     side: const BorderSide(color: Color(0xFFFECACA)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -2368,11 +2871,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: [
               const Text(
                 'ประวัติการดื่มน้ำวันนี้',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               Text(
                 '${_waterLogs.length} รายการ',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -2404,9 +2915,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget _buildMacroBadge(String title, String value, Color color) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(title, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 11, color: Colors.white70),
+        ),
       ],
     );
   }
@@ -2431,10 +2952,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         children: [
           Icon(icon, size: 28),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           Text(
             sublabel,
-            style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w400),
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white70,
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ],
       ),
@@ -2461,18 +2989,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               color: const Color(0xFFE0F2FE),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.water_drop_rounded, color: Color(0xFF0284C7), size: 18),
+            child: const Icon(
+              Icons.water_drop_rounded,
+              color: Color(0xFF0284C7),
+              size: 18,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
               '+${log.amount} ml',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ),
           Text(
             '$hour:$minute น.',
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -2526,7 +3066,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
@@ -2537,22 +3080,46 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     children: [
                       Column(
                         children: [
-                          const Text('เวลาเข้านอน', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                          const Text(
+                            'เวลาเข้านอน',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             _bedTime.format(context),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                         ],
                       ),
-                      const Icon(Icons.arrow_forward_rounded, color: Color(0xFF94A3B8), size: 18),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 18,
+                      ),
                       Column(
                         children: [
-                          const Text('เวลาตื่นนอน', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                          const Text(
+                            'เวลาตื่นนอน',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             _wakeTime.format(context),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                         ],
                       ),
@@ -2567,7 +3134,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         const SizedBox(height: 24),
         const Text(
           'เลือกเวลาเข้านอน - ตื่นนอน',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -2599,7 +3170,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         const SizedBox(height: 20),
         const Text(
           'หรือ ปรับจำนวนชั่วโมงโดยตรง',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 8),
 
@@ -2615,10 +3190,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('ปรับชั่วโมงการนอน:', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                  const Text(
+                    'ปรับชั่วโมงการนอน:',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   Text(
                     '${_sleepHours.toStringAsFixed(1)} ชม.',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6366F1),
+                    ),
                   ),
                 ],
               ),
@@ -2643,24 +3228,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         const SizedBox(height: 20),
         const Text(
           'ความรู้สึกหลังตื่นนอน (คุณภาพ)',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 10),
 
         Wrap(
           spacing: 8,
-          children: ['ดีเยี่ยม', 'สดชื่น', 'พอใช้', 'ยังเพลียอยู่'].map((quality) {
+          children: ['ดีเยี่ยม', 'สดชื่น', 'พอใช้', 'ยังเพลียอยู่'].map((
+            quality,
+          ) {
             final isSelected = _sleepQuality == quality;
             return ChoiceChip(
               label: Text(quality),
               selected: isSelected,
               selectedColor: const Color(0xFFEEF2FF),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFF6366F1)
+                    : const Color(0xFF64748B),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFE2E8F0),
+                color: isSelected
+                    ? const Color(0xFF6366F1)
+                    : const Color(0xFFE2E8F0),
               ),
               onSelected: (selected) {
                 if (selected) setState(() => _sleepQuality = quality);
@@ -2678,7 +3273,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             backgroundColor: const Color(0xFF6366F1),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             elevation: 0,
           ),
         ),
@@ -2686,51 +3283,72 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         const SizedBox(height: 24),
         const Text(
           'บันทึกล่าสุด',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
         ),
         const SizedBox(height: 12),
 
-        ..._sleepRecords.map((record) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(10),
+        ..._sleepRecords.map(
+          (record) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF2FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.bedtime_rounded,
+                    color: Color(0xFF6366F1),
+                    size: 18,
+                  ),
                 ),
-                child: const Icon(Icons.bedtime_rounded, color: Color(0xFF6366F1), size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${record.hours} ชม. (${record.quality})',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      '${record.bedTime.format(context)} - ${record.wakeTime.format(context)}',
-                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${record.hours} ชม. (${record.quality})',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      Text(
+                        '${record.bedTime.format(context)} - ${record.wakeTime.format(context)}',
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '${record.date.day}/${record.date.month}',
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-            ],
+                Text(
+                  '${record.date.day}/${record.date.month}',
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
-        )),
+        ),
         const SizedBox(height: 20),
       ],
     );
@@ -2760,13 +3378,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               children: [
                 Icon(icon, size: 18, color: color),
                 const SizedBox(width: 6),
-                Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               time.format(context),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ],
         ),
@@ -2781,9 +3410,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final categories = ['ทั้งหมด', 'Full Body', 'Push', 'Pull', 'Legs', 'Core'];
     final filteredMissions = _selectedMissionCategory == 'ทั้งหมด'
         ? _workoutMissions
-        : _workoutMissions.where((m) => m.category == _selectedMissionCategory).toList();
+        : _workoutMissions
+              .where((m) => m.category == _selectedMissionCategory)
+              .toList();
 
-    final totalBurned = _workoutRecords.fold<int>(0, (sum, w) => sum + (w.durationMinutes * 8));
+    final totalBurned = _workoutRecords.fold<int>(
+      0,
+      (sum, w) => sum + (w.durationMinutes * 8),
+    );
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -2813,7 +3447,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -2821,18 +3458,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.military_tech_rounded, size: 14, color: Colors.white),
+                        Icon(
+                          Icons.military_tech_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'MISSION CENTER',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   if (_isSubscribed)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF59E0B),
                         borderRadius: BorderRadius.circular(8),
@@ -2840,9 +3488,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 12),
+                          Icon(
+                            Icons.workspace_premium_rounded,
+                            color: Colors.white,
+                            size: 12,
+                          ),
                           SizedBox(width: 4),
-                          Text('EXP x1.5 ACTIVE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
+                          Text(
+                            'EXP x1.5 ACTIVE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -2866,7 +3525,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
               // Mini summary row
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0x22FFFFFF),
                   borderRadius: BorderRadius.circular(14),
@@ -2876,12 +3538,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   children: [
                     Text(
                       'พิชิตแล้ว: ${_workoutRecords.length} ครั้ง',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Container(width: 1, height: 16, color: Colors.white30),
                     Text(
                       'เบิร์นสะสม: ~$totalBurned kcal 🔥',
-                      style: const TextStyle(color: Color(0xFFFDE68A), fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Color(0xFFFDE68A),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -2918,7 +3588,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
@@ -2926,34 +3599,60 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome_rounded, color: Color(0xFFFDE68A), size: 14),
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Color(0xFFFDE68A),
+                          size: 14,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'SMART ROUTINE BUILDER',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text('25+ ท่าฝึก & AI รีวิว', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      '25+ ท่าฝึก & AI รีวิว',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               const Text(
                 'จัดตารางฝึกด้วยตนเอง & รีวิวความสมดุล',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 4),
               const Text(
                 'เลือกท่าฝึก ปรับเซต/ครั้ง และให้ระบบประเมินความสมดุลกล้ามเนื้อ คำนวณแคลอรี และรับคำแนะนำจาก AI Coach',
-                style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 14),
               SizedBox(
@@ -2972,9 +3671,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF0369A1),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ),
@@ -3004,9 +3708,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                   backgroundColor: Colors.white,
                   side: BorderSide(
-                    color: isSelected ? const Color(0xFF10B981) : const Color(0xFFE2E8F0),
+                    color: isSelected
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFE2E8F0),
                   ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               );
             }).toList(),
@@ -3035,12 +3743,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         color: const Color(0xFFECFDF5),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.edit_note_rounded, color: Color(0xFF10B981), size: 20),
+                      child: const Icon(
+                        Icons.edit_note_rounded,
+                        color: Color(0xFF10B981),
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       'บันทึกตารางฝึกเอง ($_selectedTemplate Day)',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                   ],
                 ),
@@ -3049,23 +3765,45 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 // Template selector chips
                 Row(
                   children: [
-                    _buildTemplateChip('Push', 'อก, ไหล่, หลังแขน', Icons.fitness_center_rounded),
+                    _buildTemplateChip(
+                      'Push',
+                      'อก, ไหล่, หลังแขน',
+                      Icons.fitness_center_rounded,
+                    ),
                     const SizedBox(width: 8),
-                    _buildTemplateChip('Pull', 'หลัง, หน้าแขน', Icons.sports_kabaddi_rounded),
+                    _buildTemplateChip(
+                      'Pull',
+                      'หลัง, หน้าแขน',
+                      Icons.sports_kabaddi_rounded,
+                    ),
                     const SizedBox(width: 8),
-                    _buildTemplateChip('Legs', 'ขา, ก้น, ท้อง', Icons.directions_run_rounded),
+                    _buildTemplateChip(
+                      'Legs',
+                      'ขา, ก้น, ท้อง',
+                      Icons.directions_run_rounded,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
                 // Duration field
-                const Text('ระยะเวลาฝึก (นาที)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                const Text(
+                  'ระยะเวลาฝึก (นาที)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF475569),
+                  ),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _durationController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.timer_outlined, color: Color(0xFF64748B)),
+                    prefixIcon: const Icon(
+                      Icons.timer_outlined,
+                      color: Color(0xFF64748B),
+                    ),
                     suffixText: 'นาที',
                     hintText: 'เช่น 45, 60',
                     filled: true,
@@ -3083,7 +3821,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 const SizedBox(height: 14),
 
                 // Exercises details
-                const Text('ท่าฝึกและเซต', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                const Text(
+                  'ท่าฝึกและเซต',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF475569),
+                  ),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _exerciseController,
@@ -3122,7 +3867,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           foregroundColor: const Color(0xFF0284C7),
                           side: const BorderSide(color: Color(0xFF0284C7)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
@@ -3130,13 +3877,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _addWorkoutLog,
-                        icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                        icon: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 18,
+                        ),
                         label: const Text('บันทึกทันที'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                           elevation: 0,
                         ),
                       ),
@@ -3156,11 +3908,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           children: [
             const Text(
               'ประวัติการออกกำลังกายที่พิชิตแล้ว',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
             Text(
               '${_workoutRecords.length} รายการ',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -3194,7 +3954,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   Widget _buildMissionCard(WorkoutMission mission) {
-    final expReward = _isSubscribed ? (mission.expReward * 1.5).toInt() : mission.expReward;
+    final expReward = _isSubscribed
+        ? (mission.expReward * 1.5).toInt()
+        : mission.expReward;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -3203,7 +3965,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: mission.isCompletedToday ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+          color: mission.isCompletedToday
+              ? const Color(0xFF86EFAC)
+              : const Color(0xFFE2E8F0),
           width: mission.isCompletedToday ? 1.5 : 1,
         ),
         boxShadow: const [
@@ -3225,7 +3989,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   color: mission.difficultyColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(mission.icon, color: mission.difficultyColor, size: 28),
+                child: Icon(
+                  mission.icon,
+                  color: mission.difficultyColor,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -3235,9 +4003,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: mission.difficultyColor.withValues(alpha: 0.15),
+                            color: mission.difficultyColor.withValues(
+                              alpha: 0.15,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -3251,7 +4024,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                         ),
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(8),
@@ -3284,7 +4060,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           const SizedBox(height: 8),
           Text(
             mission.subtitle,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -3293,9 +4073,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             spacing: 8,
             runSpacing: 6,
             children: [
-              _buildBadgePill(Icons.timer_outlined, '${mission.durationMinutes} นาที', const Color(0xFF6366F1)),
-              _buildBadgePill(Icons.local_fire_department_rounded, '${mission.caloriesBurn} kcal', const Color(0xFFF59E0B)),
-              _buildBadgePill(Icons.stars_rounded, '+$expReward EXP', const Color(0xFF10B981)),
+              _buildBadgePill(
+                Icons.timer_outlined,
+                '${mission.durationMinutes} นาที',
+                const Color(0xFF6366F1),
+              ),
+              _buildBadgePill(
+                Icons.local_fire_department_rounded,
+                '${mission.caloriesBurn} kcal',
+                const Color(0xFFF59E0B),
+              ),
+              _buildBadgePill(
+                Icons.stars_rounded,
+                '+$expReward EXP',
+                const Color(0xFF10B981),
+              ),
             ],
           ),
 
@@ -3315,11 +4107,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF10B981),
+                          size: 18,
+                        ),
                         SizedBox(width: 6),
                         Text(
                           'พิชิตภารกิจนี้แล้ววันนี้ ✓',
-                          style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            color: Color(0xFF059669),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -3338,7 +4138,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       backgroundColor: const Color(0xFF10B981),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
                   ),
@@ -3360,7 +4162,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         children: [
           Icon(icon, color: color, size: 12),
           const SizedBox(width: 4),
-          Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -3378,7 +4187,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             color: isSelected ? const Color(0xFFECFDF5) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? const Color(0xFF10B981) : const Color(0xFFE2E8F0),
+              color: isSelected
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFE2E8F0),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -3386,7 +4197,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: [
               Icon(
                 icon,
-                color: isSelected ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFF64748B),
                 size: 24,
               ),
               const SizedBox(height: 6),
@@ -3395,14 +4208,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: isSelected ? const Color(0xFF065F46) : const Color(0xFF0F172A),
+                  color: isSelected
+                      ? const Color(0xFF065F46)
+                      : const Color(0xFF0F172A),
                 ),
               ),
               Text(
                 sub,
                 style: TextStyle(
                   fontSize: 9,
-                  color: isSelected ? const Color(0xFF047857) : const Color(0xFF94A3B8),
+                  color: isSelected
+                      ? const Color(0xFF047857)
+                      : const Color(0xFF94A3B8),
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -3431,7 +4248,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(8),
@@ -3455,18 +4275,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.timer_outlined, size: 12, color: Color(0xFF64748B)),
+                    const Icon(
+                      Icons.timer_outlined,
+                      size: 12,
+                      color: Color(0xFF64748B),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${record.durationMinutes} นาที',
-                      style: const TextStyle(color: Color(0xFF475569), fontSize: 11, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: Color(0xFF475569),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF94A3B8), size: 20),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFF94A3B8),
+                  size: 20,
+                ),
                 onPressed: () => _deleteWorkout(index),
                 visualDensity: VisualDensity.compact,
                 tooltip: 'ลบรายการนี้',
@@ -3476,7 +4308,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           const SizedBox(height: 10),
           Text(
             record.exercises,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.4),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF334155),
+              height: 1.4,
+            ),
           ),
         ],
       ),

@@ -1,174 +1,126 @@
-# 📱 เอกสารอธิบายโค้ดและวิธีเปิดแอป Health Tracker
+# 📱 เอกสารอธิบายโครงสร้างโค้ดและสถาปัตยกรรม HealthQuest App
 
-เอกสารนี้จัดทำขึ้นเพื่ออธิบายโครงสร้าง สถาปัตยกรรม โมเดลข้อมูล ตรรกะการทำงาน (Logic) ทั้งหมดของแอปพลิเคชัน **Health Tracker** รวมถึงขั้นตอนและคำสั่งในการเปิดแอปพลิเคชันขึ้นมาทดสอบและตรวจสอบผลงาน
-
----
-
-## 🚀 1. วิธีเปิดแอปพลิเคชันขึ้นมาเช็ค (How to Run the App)
-
-คุณสามารถเปิดแอปนี้ขึ้นมาทดสอบได้หลากหลายวิธีตามความสะดวก:
-
-### วิธีที่ 1: เปิดบน Web Browser (Google Chrome / Edge) — ⚡ แนะนำ รวดเร็วที่สุด
-เปิด Terminal หรือ PowerShell ที่โฟลเดอร์โปรเจกต์ (`c:\Users\Windows 11\health_app`) แล้วรันคำสั่ง:
-```bash
-flutter run -d chrome
-```
-*หรือเปิดบน Microsoft Edge:*
-```bash
-flutter run -d edge
-```
-> ระบบจะเปิดหน้าต่างเบราว์เซอร์พร้อมแสดงหน้าจอแอปพลิเคชันขึ้นมาทันที
+เอกสารนี้จัดทำขึ้นสำหรับ Senior Flutter Developer & UX/UI Designer เพื่ออธิบายโครงสร้าง สถาปัตยกรรม โมเดลข้อมูล ตรรกะการทำงาน (Logic) ทั้งหมดของแอปพลิเคชัน **HealthQuest / Helpty App** ตาม 7 เสาหลักที่พัฒนาขึ้นใหม่
 
 ---
 
-### วิธีที่ 2: เปิดเป็น Windows Desktop Application (Native)
-รันเป็นโปรแกรม Desktop บนเครื่อง Windows:
-```bash
-flutter run -d windows
-```
-> เหมาะสำหรับการทดสอบประสิทธิภาพแบบ Native Application บนเครื่อง PC
+## 🏗️ 1. สถาปัตยกรรมระบบ (System Architecture)
 
----
-
-### วิธีที่ 3: เปิดผ่าน VS Code หรือ Antigravity IDE (GUI)
-1. เปิดโฟลเดอร์โปรเจกต์ใน IDE
-2. กดปุ่ม **`F5`** หรือไปที่เมนู **Run -> Start Debugging**
-3. คุณสามารถเลือก Device ที่ต้องการรัน (Chrome, Windows, หรือ Android Emulator) ได้ที่มุมขวาล่างของหน้าต่างโปรแกรม
-
----
-
-### ⌨️ คีย์ลัดขณะที่แอปรันอยู่ (Terminal Shortcuts)
-เมื่อรันคำสั่ง `flutter run` สำเร็จแล้ว สามารถกดปุ่มบนคีย์บอร์ดใน Terminal ได้ดังนี้:
-- **`r`** : **Hot Reload** — อัปเดตการเปลี่ยนแปลงของโค้ดและ UI ทันทีโดยไม่ต้องเริ่มใหม่ และไม่สูญเสียข้อมูลสถานะ (State)
-- **`R`** : **Hot Restart** — รีเซ็ตสถานะและรีสตาร์ตแอปใหม่ทั้งหมด
-- **`q`** : **Quit** — ออกจากการรันแอปพลิเคชัน
-
----
-
-## 🏗️ 2. โครงสร้างสถาปัตยกรรม (System Architecture)
-
-แอปพลิเคชันใช้การออกแบบสถาปัตยกรรมแบบ **Single-Source-of-Truth** บนฐานของ **Flutter Material 3**:
+แอปพลิเคชันได้รับการจัดระเบียบใหม่เป็น **Clean Modular Architecture** โดยใช้ **InheritedNotifier (AppScope)** ร่วมกับ **AppState (ChangeNotifier)** ซึ่งเป็นกลไก Reactive State Management มาตรฐานระดับ Core ของ Flutter ที่มีประสิทธิภาพสูง ไม่เกิดปัญหา Dependency Version Conflict และรองรับการอัปเดต UI แบบเรียลไทม์ทั่วทั้งแอปพลิเคชัน
 
 ```mermaid
 graph TD
-    App[MyApp / MaterialApp] --> Nav[MainNavigationScreen]
-    Nav --> State[State: Water, Sleep, Workout Data]
+    App[MyApp / AppTheme.darkTheme] --> Scope[AppScope: InheritedNotifier]
+    Scope --> State[AppState: ChangeNotifier]
     
-    State --> Tab0[1. Dashboard Tab]
-    State --> Tab1[2. Water Tracker Tab]
-    State --> Tab2[3. Sleep Tracker Tab]
-    State --> Tab3[4. Workout Log Tab]
-    State --> Tab4[5. Code Guide Tab]
-```
-
-### ทำไมถึงเลือกสถาปัตยกรรมนี้?
-1. **IndexedStack Navigation**: สลับหน้าจอทั้ง 5 หน้าโดยไม่ทำลาย Widget State ในหน่วยความจำ ทำให้เมื่อผู้ใช้สลับจากหน้าบันทึกน้ำไปหน้าการนอน แล้วกลับมา ข้อมูลและตำแหน่ง Scroll จะยังคงอยู่ครบถ้วน
-2. **Centralized State in State**: ตัวแปรสถานะทั้งหมดถูกเก็บไว้ที่ `_MainNavigationScreenState` ทำให้การอัปเดตในแท็บใดแท็บหนึ่ง (เช่น ดื่มน้ำเพิ่ม +500ml) จะสะท้อนกลับมายังแดชบอร์ดทันทีเมื่อกด `setState()`
-3. **Zero External Dependencies**: ไม่พึ่งพา Library ภายนอกที่ไม่จำเป็น ทำให้โปรเจกต์คอมไพล์ผ่าน 100% ปราศจากปัญหา Version Mismatch
-
----
-
-## 📦 3. โครงสร้างข้อมูล (Data Models)
-
-มีคลาสโมเดลข้อมูลหลัก 3 คลาสใน `lib/main.dart`:
-
-### 3.1 `WaterLog`
-เก็บบันทึกประวัติการดื่มน้ำแต่ละครั้ง
-```dart
-class WaterLog {
-  final int amount;   // ปริมาณน้ำ (ml)
-  final DateTime time; // เวลาที่บันทึก
-  WaterLog({required this.amount, required this.time});
-}
-```
-
-### 3.2 `SleepRecord`
-เก็บบันทึกข้อมูลการนอนหลับ
-```dart
-class SleepRecord {
-  final TimeOfDay bedTime;  // เวลาเข้านอน
-  final TimeOfDay wakeTime; // เวลาตื่นนอน
-  final double hours;       // ชั่วโมงการนอน (คำนวณอัตโนมัติ)
-  final String quality;     // คุณภาพการนอน (ดีเยี่ยม, พอใช้, น้อยเกินไป)
-  final DateTime date;      // วันที่บันทึก
-  ...
-}
-```
-
-### 3.3 `WorkoutRecord`
-เก็บบันทึกข้อมูลการออกกำลังกาย
-```dart
-class WorkoutRecord {
-  final String category;       // กลุ่มกล้ามเนื้อ (Push, Pull, Legs)
-  final String exercises;      // ท่าฝึกและรายละเอียดเซต
-  final int durationMinutes;  // ระยะเวลาฝึก (นาที)
-  final DateTime date;         // วันที่บันทึก
-  ...
-}
+    State --> Sub1[1. Subscription & User Profile State]
+    State --> Sub2[2. Coin Economy & Shop Catalog]
+    State --> Sub3[3. Virtual Health Pet State]
+    State --> Sub4[4. AI Health Coach & Live Context]
+    State --> Sub5[5. Multi-Source Health Metrics]
+    State --> Sub6[6. HealthQuest RPG & Boss Battle]
+    
+    Scope --> Nav[MainNavigationScreen]
+    Nav --> Tab0[Gamified Dashboard Screen]
+    Nav --> Tab1[Nutrition & Water Tracker]
+    Nav --> Tab2[Sleep Tracker]
+    Nav --> Tab3[Workout Routine Builder]
+    Nav --> Tab4[AI Coach Chat & Quests Dual Tab]
 ```
 
 ---
 
-## ⚡ 4. รายละเอียดตรรกะและอัลกอริทึม (Feature Logic)
+## 📁 2. โครงสร้างโฟลเดอร์และไฟล์ (File & Directory Structure)
 
-### 4.1 แดชบอร์ด (Dashboard)
-- **คำนวณเปอร์เซ็นต์น้ำดื่ม**:
-  ```dart
-  final waterPercent = (_currentWater / _waterGoal).clamp(0.0, 1.0);
-  ```
-  ใช้ `.clamp(0.0, 1.0)` เพื่อป้องกันไม่ให้ Progress Bar ล้นหน้าจอเมื่อผู้ใช้ดื่มน้ำเกินเป้าหมาย
-- **คำนวณเวลารวมออกกำลังกาย**:
-  ```dart
-  final totalWorkoutMins = _workoutRecords.fold<int>(0, (sum, item) => sum + item.durationMinutes);
-  ```
-- **คะแนนภาพรวมสุขภาพรายวัน (Health Score Indicator)**:
-  เฉลี่ยค่าน้ำดื่ม + การนอนหลับพักผ่อน (>= 7 ชม.) + การออกกำลังกาย
-
-### 4.2 การดื่มน้ำ (Water Tracker)
-- **`_addWater(amount)`**: เพิ่มค่าน้ำเข้า `_currentWater` และแทรกบันทึกประวัติ `WaterLog` รายการใหม่ไว้บนสุดของ List (`_waterLogs.insert(0, ...)`)
-- **Quick Buttons**: ปุ่มด่วน +100ml, +250ml, +500ml
-- **`_resetWater()`**: กล่องข้อความแจ้งเตือน (`AlertDialog`) ยืนยันก่อนรีเซ็ตค่าน้ำกลับเป็น 0
-
-### 4.3 การนอนหลับ (Sleep Tracker)
-- **อัลกอริทึมคำนวณเวลานอนข้ามคืน (Overnight Calculation)**:
-  ```dart
-  double _calculateHours(TimeOfDay start, TimeOfDay end) {
-    final startMinutes = start.hour * 60 + start.minute;
-    final endMinutes = end.hour * 60 + end.minute;
-    int diff = endMinutes - startMinutes;
-    if (diff <= 0) {
-      diff += 24 * 60; // จัดการกรณีเข้านอนตอนดึกและตื่นนอนในวันถัดไป
-    }
-    return double.parse((diff / 60.0).toStringAsFixed(1));
-  }
-  ```
-- เรียกใช้ Native `showTimePicker` สำหรับเลือกเวลาเข้านอนและตื่นนอน
-
-### 4.4 การออกกำลังกาย (Workout Log)
-- **Template Auto-fill**: รองรับโปรแกรม Push / Pull / Legs โดยเมื่อแตะเลือกจะใส่ท่าฝึกเริ่มต้นลงใน `TextEditingController` อัตโนมัติ
-- **History Management**: บันทึกรายการฝึกใหม่และสามารถลบรายการได้ (`_deleteWorkout(index)`)
+```
+lib/
+├── models/
+│   └── health_models.dart         # โครงสร้างข้อมูล User, HealthData, Pet, CoinItem, Message, Boss
+├── theme/
+│   └── app_theme.dart             # โทนสี Deep Navy (#0F172A), Cyan, Neon Mint, Glassmorphism
+├── state/
+│   └── app_state.dart             # Central Reactive State (InheritedNotifier / ChangeNotifier)
+├── widgets/
+│   ├── source_badge.dart          # ป้ายระบุแหล่งที่มาของข้อมูล (Apple Health, Google Fit, Manual, AI)
+│   ├── glass_card.dart            # การ์ดสไตล์ Glassmorphism
+│   ├── pet_card_widget.dart       # วิดเจ็ตสัตว์เลี้ยง Tamagotchi ตอบสนองตามสุขภาพจริง
+│   ├── quick_logging_strip.dart   # แถบบันทึกข้อมูลด่วน 1-Tap Quick Logging
+│   └── rpg_status_bar.dart        # แถบค่าสถานะ HP/MP/ATK และทางเข้าสู้บอส
+├── screens/
+│   ├── gamified_dashboard_screen.dart # แดชบอร์ดหลักสไตล์ Gamification
+│   ├── coin_shop_screen.dart          # ร้านค้า Health Shop & Rewards
+│   ├── boss_battle_screen.dart        # สมรภูมิสู้บอสประจำสัปดาห์ (Solo/Co-op)
+│   ├── ai_coach_screen.dart           # หน้าแชทปรึกษา AI Health Coach
+│   └── premium_subscription_screen.dart # หน้าเปรียบเทียบ Free vs Pro + สลับโหมดทดสอบ
+├── nutrition_tracker.dart         # ตัวบันทึกอาหารและ Macro สารอาหาร (P/C/F)
+├── routine_builder.dart           # ตัวสร้างตารางเวทและระบบวิเคราะห์รูทีน AI
+├── profile_history_screen.dart    # หน้ารวมประวัติสุขภาพและ Lifetime Stats
+├── quest_ranking_screen.dart      # ระบบเควส RPG และลีดเดอร์บอร์ดลีก
+└── main.dart                      # ทางเข้าหลักและการสลับแท็บ
+```
 
 ---
 
-## 📖 5. หน้าอธิบายโค้ดในตัวแอป (In-App Code Guide)
+## 💎 3. รายละเอียดการทำงานของ 7 ฟังก์ชันสำคัญ
 
-ได้ทำการสร้างหน้าจอ `CodeGuideScreen` (อยู่ในไฟล์ `lib/code_guide_screen.dart`) บรรจุอยู่ในแท็บที่ 5 ของแอปพลิเคชัน:
-- มี Filter Chips สำหรับเลือกดูเฉพาะหัวข้อ (สถาปัตยกรรม, Data Models, ฟังก์ชัน, วิธีเปิดแอป)
-- มีบล็อก Code Snippets แบบ Dark Theme ไฮไลต์ชัดเจน
-- สามารถกดปุ่มสลับไปยังแท็บอื่นๆ ได้โดยตรง
-- มีปุ่มเข้าถึงด่วนจากทั้ง **Bottom Navigation Bar**, **Icon บน AppBar**, และ **Banner บน Dashboard**
+### 1. Modern UI/UX Redesign
+- **Visual Palette:** 
+  - พื้นหลังหลัก: Deep Navy Blue (`#0F172A`)
+  - สีพื้นผิวการ์ด: Slate Dark Surface (`#1E293B`) พร้อมเส้นขอบกระจกใส `Colors.white.withValues(alpha: 0.08)`
+  - สีไฮไลต์: Cyan Vibrant (`#06B6D4`), Neon Mint (`#10B981`), Amber Gold (`#F59E0B`), Mystic Purple (`#8B5CF6`)
+- **1-Tap Logging:** วิดเจ็ต `QuickLoggingStrip` ช่วยให้ผู้ใช้บันทึกน้ำ (+250ml, +500ml), การนอน 7.5 ชม., เวท 45 นาที หรือซิงค์สมาร์ทวอทช์ได้ในคลิกเดียว
+
+### 2. Coin Economy & Shop System (`lib/screens/coin_shop_screen.dart`)
+- **ระบบสะสมเหรียญ:**
+  - ดื่มน้ำครบเป้า: `+10 Coins`
+  - นอนหลับเกิน 7 ชั่วโมง: `+20 Coins`
+  - ออกกำลังกายสำเร็จ: `+30 Coins`
+  - สตรีคต่อเนื่อง 7 วัน: `+100 Coins`
+  - ปราบบอสสำเร็จ: `+150 Coins`
+- **ร้านค้า Health Shop:** มี 3 หมวดหมู่:
+  1. *Pet Items:* แอปเปิ้ลออร์แกนิก, Energy Elixir, Cool Shades, Golden Crown, Cybernetic Wings (Pro Only)
+  2. *App Cosmetics:* Cyberpunk Neon Theme, Emerald Forest Theme
+  3. *Utility Perks:* Streak Shield (กันสตรีคหลุด 1 วัน), ตั๋วสุ่มเปิดกล่องสมบัติประจำสัปดาห์
+
+### 3. High-Value Premium Subscription (`lib/screens/premium_subscription_screen.dart`)
+- **Free Tier:** ใช้งานฟังก์ชันพื้นฐาน, เลี้ยงสัตว์เลี้ยงร่างเริ่มต้น (Baby & Teen), คุยกับ AI ได้ 5 ข้อความ/วัน
+- **Pro / Premium Tier:**
+  - **Unlimited AI Health Coach:** ให้คำปรึกษาไม่จำกัด พร้อมวิเคราะห์ตารางเวทและเมนูเฉพาะบุคคล
+  - **Advanced Analytics & Auto-Sync:** วิเคราะห์สุขภาพขั้นสูง พร้อมซิงค์ข้อมูลกับสมาร์ทวอทช์อัตโนมัติ
+  - **Exclusive Pet Evolutions:** ปลดล็อกร่างสัตว์เลี้ยงในตำนาน `Mythical Celestial Dragon 🐉✨`
+  - **Multi-Device & Cloud Backup:** สำรองข้อมูลขึ้นคลาวด์แบบเรียลไทม์
+- **One-Tap Switcher:** มีปุ่มสลับโหมด PRO / FREE ทั้งในแถบ Header และหน้า Premium ให้กรรมการหรือผู้ใช้ทดสอบ UX ทั้งสองแบบได้ทันที
+
+### 4. Interactive AI Health Coach Chat (`lib/screens/ai_coach_screen.dart`)
+- เพิ่มหน้าแชทกับ AI ในแท็บที่ 5 พร้อมสวิตช์สลับหน้า
+- **Context-Aware Responses:** AI ตรวจสอบข้อมูลสุขภาพจริงจากแทร็กเกอร์ของผู้ใช้ (ปริมาณน้ำที่ดื่มวันนี้, ชั่วโมงนอนและคะแนนการนอนเมื่อคืน, แคลอรีที่เผาผลาญ) นำมาเป็นบริบทในการตอบคำถามอย่างตรงจุด
+- **Quick Prompts:** มีปุ่มคำถามด่วน (อาหารคลีนหลังออกกำลังกาย, แก้นอนไม่หลับ, แนะนำตาราง Push/Pull/Legs, วิเคราะห์สุขภาพวันนี้)
+- **ระบบจำกัดโควต้า:** Free Tier แจ้งเตือนโควต้า 5 ข้อความ/วัน เมื่อครบจะแสดง Bottom Sheet ชวนอัปเกรด Pro
+
+### 5. Multi-Source Health Tracking & Source Labeling (`lib/widgets/source_badge.dart`)
+- รองรับ Metrics ครบถ้วน: Water, Sleep, Workout, Steps & Active Calories
+- แสดงป้ายกำกับแหล่งที่มาบนทุกวิดเจ็ต:
+  - `[Synced via Apple Health / Google Fit]` (ไอคอนนาฬิกาสมาร์ทวอทช์ สีฟ้า)
+  - `[Manual Input]` (ไอคอนมือสัมผัส สีทอง)
+  - `[AI Estimated]` (ไอคอน AI สีม่วง)
+
+### 6. HealthQuest RPG & Boss Battles (`lib/screens/boss_battle_screen.dart`)
+- **แปลงสุขภาพจริงเป็นพลังต่อสู้:**
+  - ดื่มน้ำ = เติม **MP** (Magic Points)
+  - นอนหลับ = ฟื้นฟู **HP** (Health Points)
+  - ออกกำลังกาย = เพิ่มค่า **ATK** (Attack Power)
+- **Weekly Boss Battle:** สู้บอส "Lord Sloth" มีท่าโจมตี Physical Strike, Hydro Blast (ใช้น้ำ MP), Restful Barrier (ใช้การนอนกางโล่) รองรับโหมด Solo และ Co-op
+
+### 7. Tamagotchi-Style Virtual Health Pet (`lib/widgets/pet_card_widget.dart`)
+- สัตว์เลี้ยง "Lumi" ประจำตัวบนแดชบอร์ด
+- **Hydration Status:** สดชื่น ✨ เมื่อดื่มน้ำพอ หรือ เหี่ยวเฉา 🥀 เมื่อขาดน้ำ
+- **Energy Level:** กระปรี้กระเปร่า ⚡ เมื่อนอนเต็มอิ่ม หรือ ง่วงซึม 💤 เมื่อนอนน้อย
+- **Evolution System:** 3 ร่างหลัก (Baby -> Teen -> Adult) + ร่างพิเศษ `Mythical Dragon 🐉` สำหรับ Pro Member
+- **Interactivity:** กดลูบหัวเพื่อเพิ่มค่าความสุขและ EXP, ให้อาหาร, สวมใส่อุปกรณ์ตกแต่งที่ซื้อจากร้านค้า
 
 ---
 
-## 🧪 6. ผลการตรวจสอบโค้ด (Quality & Static Analysis)
+## 🧪 การทดสอบระบบ (Quality Assurance)
 
-รันคำสั่งวิเคราะห์ความถูกต้องของโค้ด:
-```bash
-dart analyze
-```
-ผลลัพธ์:
-```
-Analyzing health_app...
-No issues found!
-```
-> โค้ดทั้งหมดผ่านการตรวจสอบ Static Analysis ตามมาตรฐาน `flutter_lints` 100% ไม่มี Error หรือ Warning ใดๆ
+- ทดสอบด้วย `flutter analyze` — **No issues found!**
+- ทดสอบด้วย `flutter test` — **All tests passed!**
